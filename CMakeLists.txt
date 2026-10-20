@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.24...4.4)
+
+project(
+  pasqal-qdmi-device
+  LANGUAGES C CXX
+  VERSION 0.2.0
+  DESCRIPTION "Pasqal QDMI Device Implementation")
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+                                               "MinSizeRel" "RelWithDebInfo")
+endif()
+
+include(CMakeDependentOption)
+
+option(USE_INSTALLED_PASQAL_QDMI_DEVICE
+       "Use an installed version of the Pasqal QDMI Device to build tests" OFF)
+
+if(USE_INSTALLED_PASQAL_QDMI_DEVICE)
+  find_package(pasqal-qdmi-device REQUIRED ${PROJECT_VERSION})
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS
+    ON
+    CACHE BOOL "Export compile commands" FORCE)
+
+set(CMAKE_VERIFY_INTERFACE_HEADER_SETS
+    ON
+    CACHE BOOL "Verify interface header sets" FORCE)
+
+set(QDMI_PREFIX "PASQAL")
+set(PASQAL_QDMI_DEVICE_ID
+    "pasqal.default"
+    CACHE STRING "Stable identifier for the Pasqal QDMI Device")
+
+cmake_dependent_option(
+  INSTALL_PASQAL_QDMI_DEVICE
+  "Generate installation instructions for the Pasqal QDMI Device"
+  ${PROJECT_IS_TOP_LEVEL} "NOT USE_INSTALLED_PASQAL_QDMI_DEVICE" OFF)
+option(BUILD_PASQAL_QDMI_TESTS "Build tests for the Pasqal QDMI device"
+       ${PROJECT_IS_TOP_LEVEL})
+cmake_dependent_option(
+  BUILD_PASQAL_QDMI_LIVE_TESTS
+  "Also run the device tests against Pasqal Cloud using ~/.pasqal/config" OFF
+  "BUILD_PASQAL_QDMI_TESTS" OFF)
+
+include(cmake/ExternalDependencies.cmake)
+
+set(QDMI_TARGET_NAME "pasqal-qdmi-device")
+
+if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
+  add_subdirectory(src)
+endif()
+
+if(BUILD_PASQAL_QDMI_TESTS)
+  get_target_property(EXPORTED_QDMI_DEVICE_ID ${QDMI_TARGET_NAME}
+                      QDMI_DEVICE_ID)
+  get_target_property(EXPORTED_QDMI_DEVICE_PREFIX ${QDMI_TARGET_NAME}
+                      QDMI_DEVICE_PREFIX)
+  get_target_property(EXPORTED_QDMI_MANIFEST_NAME ${QDMI_TARGET_NAME}
+                      QDMI_MANIFEST_NAME)
+  if(NOT EXPORTED_QDMI_DEVICE_ID STREQUAL "${PASQAL_QDMI_DEVICE_ID}")
+    message(FATAL_ERROR "The Pasqal QDMI target does not export its stable ID")
+  endif()
+  if(NOT EXPORTED_QDMI_DEVICE_PREFIX STREQUAL "${QDMI_PREFIX}")
+    message(FATAL_ERROR "The Pasqal QDMI target does not export its symbol prefix")
+  endif()
+  if(NOT EXPORTED_QDMI_MANIFEST_NAME STREQUAL "${QDMI_TARGET_NAME}.qdmi.json")
+    message(FATAL_ERROR "The Pasqal QDMI target does not export its device catalog")
+  endif()
+
+  enable_testing()
+  include(GoogleTest)
+  add_subdirectory(test)
+endif()
