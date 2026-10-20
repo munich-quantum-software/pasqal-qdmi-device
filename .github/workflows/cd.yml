@@ -1,12 +1,8 @@
-name: Release preparation
+name: CD 🚀
 on:
+  release:
+    types: [published]
   workflow_dispatch:
-    inputs:
-      publish:
-        description: "Publish to PyPI only after licensing clearance and explicit publication approval"
-        type: boolean
-        default: false
-        required: true
 permissions: {}
 jobs:
   sdist:
@@ -24,19 +20,26 @@ jobs:
     permissions:
       contents: read
   publish:
-    if: inputs.publish && vars.PUBLICATION_APPROVED == 'true' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'release' && github.event.action == 'published' &&
+      !github.event.repository.private && vars.PUBLICATION_APPROVED == 'true'
     needs: [sdist, wheel]
     runs-on: ubuntu-26.04
     environment:
       name: pypi
       url: https://pypi.org/p/pasqal-qdmi
     permissions:
+      attestations: write
       contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: "*cibw-*"
+          pattern: cibw-*
           path: dist
           merge-multiple: true
+      - name: Generate artifact attestation for sdist and wheels
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

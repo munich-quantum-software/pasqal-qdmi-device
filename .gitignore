@@ -8,3 +8,4 @@ __pycache__/
 .ruff_cache/
 /docs/_build/
 *.egg-info/
+/.codex/environments/

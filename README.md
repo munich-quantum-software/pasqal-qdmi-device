@@ -2,7 +2,7 @@
 
 MQSC-maintained QDMI device for submitting native Pulser programs to Pasqal, a full-stack neutral-atom quantum computing company. MQT Core supplies Python bindings, discovery and job/result handling; Pulser constructs the pulse programs.
 
-This private `0.2.0` development package targets released QDMI 1.4.0 and MQT Core 4.1.1 or later. The initial validation target is **EMU_FREE**, currently an unbilled emulator supporting up to 12 atoms. Runtime metadata is authoritative. Emulator validation is not hardware validation.
+Version 1.0 targets released QDMI 1.4.0 and MQT Core 4.1.1 or later. The validated backend is **EMU_FREE**, an unbilled emulator supporting up to 12 atoms. Runtime metadata is authoritative. Hardware execution has not been validated.
 
 ## Install and check offline
 
@@ -17,10 +17,10 @@ cmake -P test/install.cmake
 
 On Windows the consumer interpreter is `build/consumer/Scripts/python.exe`. No cloud credentials are required for building, discovery, or normal tests. Source builds require CMake >=3.24, a C++20 compiler and TLS development libraries.
 
-See [installation](docs/installation.md), [authentication](docs/authentication.md), [end-to-end usage](docs/usage.md), [capabilities](docs/capabilities.md) and [maintenance](docs/maintenance.md). Build the offline HTML documentation with `uvx nox -s docs`.
+See [installation](docs/installation.md), [authentication](docs/authentication.md), [end-to-end usage](docs/usage.md), [capabilities](docs/capabilities.md), [development](docs/development.md) and [maintenance](docs/maintenance.md). Build the offline HTML documentation with `uvx nox -s docs`.
 
-## Publication status
+## License
 
-The repository remains private. The supplied source archive omitted a root license and authorship evidence for most implementation files. Existing QDMI notices and documented upstream attribution are preserved; public distribution is blocked until the missing permissions are established. Read [LICENSE](LICENSE) and [NOTICE](NOTICE) before redistributing.
+This project is licensed under [Apache-2.0 WITH LLVM-exception](LICENSE). Builds include the applicable dependency license texts alongside installed artifacts. Copyright and SPDX headers are maintained by the `license-tools` pre-commit hook.
 
-Live verification is a separate explicit command and only targets EMU_FREE. No documentation or test-success statement should be read as evidence that a hardware job was run.
+Live verification is a separate explicit command and only targets EMU_FREE.

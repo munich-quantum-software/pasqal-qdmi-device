@@ -1,6 +1,26 @@
-/*
- * Pasqal Cloud REST client, following QRMI's Rust pasqal-cloud-api crate.
- */
+// Copyright (c) 2026 Munich Quantum Software Company GmbH
+// Copyright (c) 2025 - 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 IBM, Pasqal
+// All rights reserved.
+//
+// Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// https://llvm.org/LICENSE.txt
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+// Keep holder order and original years; excluded from license-tools' year
+// sorting. Adapted from QRMI's Pasqal client and API models, originally
+// Apache-2.0. Modified for this QDMI implementation. Upstream source:
+// https://github.com/qiskit-community/qrmi/tree/bbbfe872ea87ca435662ca26163b6fc913a3b4bb/dependencies/pasqal_cloud_client
 
 #include "pasqal_cloud.hpp"
 

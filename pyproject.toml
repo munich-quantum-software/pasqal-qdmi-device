@@ -1,4 +1,18 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# All rights reserved.
+#
+# Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://llvm.org/LICENSE.txt
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
@@ -7,14 +21,14 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pasqal-qdmi"
-version = "0.2.0"
+version = "1.0.0"
 description = "Native Pulser execution on Pasqal through QDMI"
 readme = "README.md"
 requires-python = ">=3.11"
-license-files = ["LICENSE", "NOTICE", "licenses/*"]
+license-files = ["LICENSE"]
 authors = [{name = "Munich Quantum Software Company GmbH"}]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: C++",
   "Topic :: Scientific/Engineering :: Quantum Computing",
@@ -58,7 +72,9 @@ build = "cp311-*"
 skip = ["*-musllinux_*", "*-win_arm64"]
 archs = "auto64"
 build-frontend = "uv"
-test-command = "python -I -c \"import sys; from mqt.core.qdmi import builtin_driver; assert 'pasqal.emu-free' in builtin_driver.registered_device_ids(); assert 'pasqal.qdmi' not in sys.modules; assert builtin_driver.open_device('pasqal.emu-free', custom1='MOCK').qubits_num() > 0\""
+test-groups = ["test"]
+test-sources = ["test"]
+test-command = "python -I -m pytest test/python/test_installed.py test/test_pasqal_integration.py test/test_transport_http.py"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_34"

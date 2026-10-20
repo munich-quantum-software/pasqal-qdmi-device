@@ -24,6 +24,6 @@ ctest --test-dir build/native -C Release --output-on-failure
 cmake --install build/native --config Release --prefix "$PWD/build/install"
 ```
 
-An installed consumer uses `find_package(pasqal-qdmi-device 0.2 REQUIRED CONFIG)` and links target `pasqal-qdmi-device`. Set `CMAKE_PREFIX_PATH` to the installed prefix. Headers include `pasqal_qdmi/device.h` and `pasqal-qdmi-device/constants.h`. The manifest sits beside the shared library and uses a relative library filename. The relocation check is `cmake -P test/install.cmake`.
+An installed consumer uses `find_package(pasqal-qdmi-device 1.0 REQUIRED CONFIG)` and links target `pasqal-qdmi-device`. Set `CMAKE_PREFIX_PATH` to the installed prefix. Headers include `pasqal_qdmi/device.h` and `pasqal-qdmi-device/constants.h`. The manifest sits beside the shared library and uses a relative library filename. The relocation check is `cmake -P test/install.cmake`.
 
 The wheel carries the same native library, headers, manifest and CMake package under `pasqal/qdmi/data`. `pasqal.qdmi` exposes their paths; all runtime operations use the existing `mqt.core.qdmi` API. No separate production ctypes bindings are installed.

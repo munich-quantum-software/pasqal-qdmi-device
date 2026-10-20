@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.2.0 — private development
+## 1.0.0 — unreleased
 
-- Preserve the supplied source draft and document its provenance and licensing gaps.
-- Submit built native Pulser programs through released QDMI and MQT Core APIs.
-- Prepare reproducible offline tests, installed artifacts, documentation and gated release infrastructure.
-
-This is an unreleased development package. Validation evidence belongs to the tested commit; neither this entry nor the version number asserts production or hardware readiness.
+- Submit built, measured Pulser programs through QDMI 1.4.0 and MQT Core.
+- Support ordered native batches, fresh-session retrieval, indexed counts and confirmed cancellation.
+- Authenticate with username/password and refresh expiring tokens without retrying submissions.
+- Discover relocatable native libraries through installed Python packages and CMake catalogs.
+- Validate EMU_FREE results against the official Pasqal SDK and independent pulse simulation.
+- Distribute under Apache-2.0 WITH LLVM-exception, with automated copyright headers and dependency notices.

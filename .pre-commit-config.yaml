@@ -22,6 +22,10 @@ repos:
     rev: 0.13.0
     hooks:
       - id: uv-lock
+  - repo: https://github.com/emzeat/mz-lictools
+    rev: v2.9.0
+    hooks:
+      - id: license-tools
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.0
     hooks:
@@ -39,4 +43,3 @@ repos:
         additional_dependencies: [pyyaml]
         types: [file]
         files: (\.cmake|CMakeLists.txt)(.in)?$
-exclude: ^(licenses/|docs/evidence/)

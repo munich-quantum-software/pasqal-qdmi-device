@@ -1,11 +1,25 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# All rights reserved.
+#
+# Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://llvm.org/LICENSE.txt
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+#
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 """Exercise a wheel-installed provider through released Core and official SDK."""
 
 from __future__ import annotations
 
 import gc
-import importlib.metadata
 import importlib.util
 import json
 import subprocess
@@ -56,12 +70,13 @@ from mqt.core.qdmi import builtin_driver
 assert 'pasqal.qdmi' not in sys.modules
 assert 'pasqal.emu-free' in builtin_driver.registered_device_ids()
 assert 'pasqal.qdmi' not in sys.modules
+assert builtin_driver.open_device('pasqal.emu-free', custom1='MOCK').qubits_num() > 0
+assert 'pasqal.qdmi' not in sys.modules
 from pasqal.qdmi import PASQAL_QDMI_LIBRARY_PATH
 assert PASQAL_QDMI_LIBRARY_PATH.is_file()
 assert 'site-packages' in str(PASQAL_QDMI_LIBRARY_PATH)
 """
     subprocess.run([sys.executable, "-I", "-c", code], cwd=tmp_path, check=True)
-    assert importlib.metadata.version("mqt-core") == "4.1.1"
 
 
 def test_core_sdk_ordering_and_lifetime(cloud):
