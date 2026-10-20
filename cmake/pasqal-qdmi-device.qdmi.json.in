@@ -6,49 +6,19 @@
         "id": "@PASQAL_QDMI_DEVICE_ID@",
         "library": "@PASQAL_QDMI_LIBRARY_FILE@",
         "prefix": "PASQAL",
-        "enabled": true
+        "enabled": true,
+        "session": {
+          "custom1": "EMU_FREE"
+        }
       },
       {
         "id": "pasqal.emu-free",
         "library": "@PASQAL_QDMI_LIBRARY_FILE@",
         "prefix": "PASQAL",
         "enabled": true,
-        "session": {"custom1": "EMU_FREE"}
-      },
-      {
-        "id": "pasqal.emu-mps",
-        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
-        "prefix": "PASQAL",
-        "enabled": true,
-        "session": {"custom1": "EMU_MPS"}
-      },
-      {
-        "id": "pasqal.emu-fresnel",
-        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
-        "prefix": "PASQAL",
-        "enabled": true,
-        "session": {"custom1": "EMU_FRESNEL"}
-      },
-      {
-        "id": "pasqal.fresnel",
-        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
-        "prefix": "PASQAL",
-        "enabled": true,
-        "session": {"custom1": "FRESNEL"}
-      },
-      {
-        "id": "pasqal.fresnel-can1",
-        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
-        "prefix": "PASQAL",
-        "enabled": true,
-        "session": {"custom1": "FRESNEL_CAN1"}
-      },
-      {
-        "id": "pasqal.mock",
-        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
-        "prefix": "PASQAL",
-        "enabled": true,
-        "session": {"custom1": "MOCK"}
+        "session": {
+          "custom1": "EMU_FREE"
+        }
       }
     ]
   }

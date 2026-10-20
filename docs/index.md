@@ -1,0 +1,18 @@
+# Pasqal QDMI Device
+
+Submit native Pulser programs to Pasqal through the Quantum Device Management Interface (QDMI). This device is maintained by Munich Quantum Software Company (MQSC). Pasqal is a full-stack neutral-atom quantum computing company.
+
+Pulser builds the pulse sequence. MQT Core discovers the installed device and manages sessions, jobs and results. The C++ provider authenticates with Pasqal and transports the sequence. There is no gate-to-pulse compiler in this package.
+
+The current package is private development software. EMU_FREE is the initial free emulator validation target; backend metadata currently reports a maximum of 12 atoms. Hardware execution has not been validated. Public release also requires resolution of the inherited draft's licensing gaps.
+
+```{toctree}
+:maxdepth: 2
+
+installation
+authentication
+usage
+capabilities
+troubleshooting
+maintenance
+```

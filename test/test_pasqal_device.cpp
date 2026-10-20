@@ -42,7 +42,10 @@ protected:
         << ":" << (__LINE__ - 4);
   }
 
-  void TearDown() override { PASQAL_QDMI_device_finalize(); }
+  void TearDown() override {
+    PASQAL_QDMI_device_session_free(session);
+    PASQAL_QDMI_device_finalize();
+  }
 };
 
 TEST_F(QDMIImplementationTest, SessionSetParameterImplemented) {
@@ -62,9 +65,39 @@ TEST_F(QDMIImplementationTest, JobSetParameterImplemented) {
   PASQAL_QDMI_Device_Job job = nullptr;
   ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
             QDMI_SUCCESS);
-  ASSERT_EQ(PASQAL_QDMI_device_job_set_parameter(job, QDMI_DEVICE_JOB_PARAMETER_MAX,
-                                             0, nullptr),
+  ASSERT_EQ(PASQAL_QDMI_device_job_set_parameter(
+                job, QDMI_DEVICE_JOB_PARAMETER_MAX, 0, nullptr),
             QDMI_ERROR_INVALIDARGUMENT);
+  PASQAL_QDMI_device_job_free(job);
+}
+
+TEST_F(QDMIImplementationTest, JobSetProgramsImplemented) {
+  PASQAL_QDMI_Device_Job job = nullptr;
+  ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
+            QDMI_SUCCESS);
+  ASSERT_NE(PASQAL_QDMI_device_job_set_programs(job, QDMI_PROGRAM_FORMAT_MAX, 0,
+                                                nullptr, nullptr),
+            QDMI_ERROR_NOTIMPLEMENTED);
+  PASQAL_QDMI_device_job_free(job);
+}
+
+TEST_F(QDMIImplementationTest, JobGetProgramImplemented) {
+  PASQAL_QDMI_Device_Job job = nullptr;
+  ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
+            QDMI_SUCCESS);
+  size_t size = 0;
+  ASSERT_NE(PASQAL_QDMI_device_job_get_program(job, 0, 0, nullptr, &size),
+            QDMI_ERROR_NOTIMPLEMENTED);
+  PASQAL_QDMI_device_job_free(job);
+}
+
+TEST_F(QDMIImplementationTest, JobGetProgramStatusImplemented) {
+  PASQAL_QDMI_Device_Job job = nullptr;
+  ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
+            QDMI_SUCCESS);
+  QDMI_Job_Status status = QDMI_JOB_STATUS_CREATED;
+  ASSERT_NE(PASQAL_QDMI_device_job_get_program_status(job, 0, &status),
+            QDMI_ERROR_NOTIMPLEMENTED);
   PASQAL_QDMI_device_job_free(job);
 }
 
@@ -72,8 +105,8 @@ TEST_F(QDMIImplementationTest, JobQueryPropertyImplemented) {
   PASQAL_QDMI_Device_Job job = nullptr;
   ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
             QDMI_SUCCESS);
-  ASSERT_EQ(PASQAL_QDMI_device_job_query_property(job, QDMI_DEVICE_JOB_PROPERTY_MAX,
-                                              0, nullptr, nullptr),
+  ASSERT_EQ(PASQAL_QDMI_device_job_query_property(
+                job, QDMI_DEVICE_JOB_PROPERTY_MAX, 0, nullptr, nullptr),
             QDMI_ERROR_INVALIDARGUMENT);
   PASQAL_QDMI_device_job_free(job);
 }
@@ -99,7 +132,8 @@ TEST_F(QDMIImplementationTest, JobCheckImplemented) {
   QDMI_Job_Status status = QDMI_JOB_STATUS_RUNNING;
   ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
             QDMI_SUCCESS);
-  ASSERT_NE(PASQAL_QDMI_device_job_check(job, &status), QDMI_ERROR_NOTIMPLEMENTED);
+  ASSERT_NE(PASQAL_QDMI_device_job_check(job, &status),
+            QDMI_ERROR_NOTIMPLEMENTED);
   PASQAL_QDMI_device_job_free(job);
 }
 
@@ -115,8 +149,8 @@ TEST_F(QDMIImplementationTest, JobGetResultsImplemented) {
   PASQAL_QDMI_Device_Job job = nullptr;
   ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
             QDMI_SUCCESS);
-  ASSERT_EQ(PASQAL_QDMI_device_job_get_results(job, 0, QDMI_JOB_RESULT_MAX, 0, nullptr,
-                                           nullptr),
+  ASSERT_EQ(PASQAL_QDMI_device_job_get_results(job, 0, QDMI_JOB_RESULT_MAX, 0,
+                                               nullptr, nullptr),
             QDMI_ERROR_INVALIDARGUMENT);
   PASQAL_QDMI_device_job_free(job);
 }
@@ -195,11 +229,11 @@ TEST_F(QDMIImplementationTest, QuerySiteIndexImplemented) {
   std::vector<PASQAL_QDMI_Site> sites(size / sizeof(PASQAL_QDMI_Site));
   ASSERT_EQ(PASQAL_QDMI_device_session_query_device_property(
                 session, QDMI_DEVICE_PROPERTY_SITES, size,
-                static_cast<void *>(sites.data()), nullptr),
+                static_cast<void*>(sites.data()), nullptr),
             QDMI_SUCCESS)
       << "Devices must provide a list of sites";
   size_t id = 0;
-  for (auto *site : sites) {
+  for (auto* site : sites) {
     ASSERT_EQ(PASQAL_QDMI_device_session_query_site_property(
                   session, site, QDMI_SITE_PROPERTY_INDEX, sizeof(size_t), &id,
                   nullptr),
@@ -214,4 +248,25 @@ TEST_F(QDMIImplementationTest, QueryDeviceQubitNum) {
                 session, QDMI_DEVICE_PROPERTY_QUBITSNUM, sizeof(size_t),
                 &num_qubits, nullptr),
             QDMI_SUCCESS);
+}
+
+TEST_F(QDMIImplementationTest, QueryStableDeviceId) {
+  size_t size = 0;
+  const auto status = PASQAL_QDMI_device_session_query_device_property(
+      session, QDMI_DEVICE_PROPERTY_ID, 0, nullptr, &size);
+  // The v1.4 device contract permits the driver to supply the configured ID.
+  if (status == QDMI_ERROR_NOTSUPPORTED) {
+    return;
+  }
+  ASSERT_EQ(status, QDMI_SUCCESS);
+  ASSERT_GT(size, 1U);
+  std::vector<char> id(size);
+  ASSERT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, QDMI_DEVICE_PROPERTY_ID, size, id.data(), nullptr),
+            QDMI_SUCCESS);
+  EXPECT_EQ(id.back(), '\0');
+  EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, QDMI_DEVICE_PROPERTY_ID, size - 1, id.data(), nullptr),
+            QDMI_ERROR_INVALIDARGUMENT);
+  EXPECT_FALSE(std::string(id.data()).empty());
 }

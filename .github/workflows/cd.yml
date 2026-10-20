@@ -1,0 +1,42 @@
+name: Release preparation
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to PyPI only after licensing clearance and explicit publication approval"
+        type: boolean
+        default: false
+        required: true
+permissions: {}
+jobs:
+  sdist:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-sdist.yml@6c933678406ab1887a137839dfd0e290f12917da # v2.5.2
+    permissions:
+      contents: read
+  wheel:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-2025]
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@6c933678406ab1887a137839dfd0e290f12917da # v2.5.2
+    with:
+      runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+  publish:
+    if: inputs.publish && vars.PUBLICATION_APPROVED == 'true' && github.ref == 'refs/heads/main'
+    needs: [sdist, wheel]
+    runs-on: ubuntu-26.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pasqal-qdmi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: "*cibw-*"
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

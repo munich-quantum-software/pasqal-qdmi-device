@@ -27,14 +27,11 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   set(JSON_VERSION
       3.12.0
       CACHE STRING "nlohmann_json version")
-  set(JSON_URL
-      https://github.com/nlohmann/json/releases/download/v${JSON_VERSION}/json.tar.xz
-  )
+  set(JSON_URL https://github.com/nlohmann/json/releases/download/v${JSON_VERSION}/json.tar.xz)
   set(JSON_SystemInclude
       ON
       CACHE INTERNAL "Treat the library headers like system headers")
-  FetchContent_Declare(nlohmann_json URL ${JSON_URL} FIND_PACKAGE_ARGS
-                                         ${JSON_VERSION})
+  FetchContent_Declare(nlohmann_json URL ${JSON_URL} FIND_PACKAGE_ARGS ${JSON_VERSION})
   list(APPEND FETCH_PACKAGES nlohmann_json)
 
   # cpr builds its own static libcurl against the system TLS library by default.
@@ -73,16 +70,13 @@ if(BUILD_PASQAL_QDMI_TESTS)
   set(GTEST_VERSION
       1.18.0
       CACHE STRING "Google Test version")
-  set(GTEST_URL
-      https://github.com/google/googletest/archive/refs/tags/v${GTEST_VERSION}.tar.gz
-  )
-  FetchContent_Declare(googletest URL ${GTEST_URL} FIND_PACKAGE_ARGS
-                                      ${GTEST_VERSION} NAMES GTest)
+  set(GTEST_URL https://github.com/google/googletest/archive/refs/tags/v${GTEST_VERSION}.tar.gz)
+  FetchContent_Declare(googletest URL ${GTEST_URL} FIND_PACKAGE_ARGS ${GTEST_VERSION} NAMES GTest)
   list(APPEND FETCH_PACKAGES googletest)
 endif()
 
-# Build cpr and its bundled curl statically, without changing BUILD_SHARED_LIBS
-# for a project that includes this one.
+# Build cpr and its bundled curl statically, without changing BUILD_SHARED_LIBS for a project that
+# includes this one.
 set(BUILD_SHARED_LIBS_PREV ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(${FETCH_PACKAGES})

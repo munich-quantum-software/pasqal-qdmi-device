@@ -10,9 +10,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-                                               "MinSizeRel" "RelWithDebInfo")
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel"
+                                               "RelWithDebInfo")
 endif()
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(CMakeDependentOption)
 
@@ -20,7 +25,7 @@ option(USE_INSTALLED_PASQAL_QDMI_DEVICE
        "Use an installed version of the Pasqal QDMI Device to build tests" OFF)
 
 if(USE_INSTALLED_PASQAL_QDMI_DEVICE)
-  find_package(pasqal-qdmi-device REQUIRED ${PROJECT_VERSION})
+  find_package(pasqal-qdmi-device ${PROJECT_VERSION} REQUIRED CONFIG)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS
@@ -37,11 +42,9 @@ set(PASQAL_QDMI_DEVICE_ID
     CACHE STRING "Stable identifier for the Pasqal QDMI Device")
 
 cmake_dependent_option(
-  INSTALL_PASQAL_QDMI_DEVICE
-  "Generate installation instructions for the Pasqal QDMI Device"
+  INSTALL_PASQAL_QDMI_DEVICE "Generate installation instructions for the Pasqal QDMI Device"
   ${PROJECT_IS_TOP_LEVEL} "NOT USE_INSTALLED_PASQAL_QDMI_DEVICE" OFF)
-option(BUILD_PASQAL_QDMI_TESTS "Build tests for the Pasqal QDMI device"
-       ${PROJECT_IS_TOP_LEVEL})
+option(BUILD_PASQAL_QDMI_TESTS "Build tests for the Pasqal QDMI device" ${PROJECT_IS_TOP_LEVEL})
 cmake_dependent_option(
   BUILD_PASQAL_QDMI_LIVE_TESTS
   "Also run the device tests against Pasqal Cloud using ~/.pasqal/config" OFF
@@ -56,12 +59,9 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
 endif()
 
 if(BUILD_PASQAL_QDMI_TESTS)
-  get_target_property(EXPORTED_QDMI_DEVICE_ID ${QDMI_TARGET_NAME}
-                      QDMI_DEVICE_ID)
-  get_target_property(EXPORTED_QDMI_DEVICE_PREFIX ${QDMI_TARGET_NAME}
-                      QDMI_DEVICE_PREFIX)
-  get_target_property(EXPORTED_QDMI_MANIFEST_NAME ${QDMI_TARGET_NAME}
-                      QDMI_MANIFEST_NAME)
+  get_target_property(EXPORTED_QDMI_DEVICE_ID ${QDMI_TARGET_NAME} QDMI_DEVICE_ID)
+  get_target_property(EXPORTED_QDMI_DEVICE_PREFIX ${QDMI_TARGET_NAME} QDMI_DEVICE_PREFIX)
+  get_target_property(EXPORTED_QDMI_MANIFEST_NAME ${QDMI_TARGET_NAME} QDMI_MANIFEST_NAME)
   if(NOT EXPORTED_QDMI_DEVICE_ID STREQUAL "${PASQAL_QDMI_DEVICE_ID}")
     message(FATAL_ERROR "The Pasqal QDMI target does not export its stable ID")
   endif()

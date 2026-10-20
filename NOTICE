@@ -1,0 +1,43 @@
+Pasqal QDMI Device
+
+Maintained by Munich Quantum Software Company GmbH (MQSC).
+Pasqal is a full-stack neutral-atom quantum computing company.
+
+Attribution is listed with MQSC first and Pasqal second where relevant; separate
+copyright holders and their original years must be retained for inherited work.
+This notice does not imply that every file has the same authors or license.
+
+1. Supplied draft
+   Source: user-supplied qdmi-pasqal-0.2.0-src.tar.gz, received 2026-10-20.
+   SHA256: f50bdc7fa960bdcdc8ba68c29b634ccde2098f6c53f3ad17722ca0010a0096dd
+   The untouched source import is preserved in repository history.
+   cmake/pasqal-qdmi-device-config.cmake.in and test/test_pasqal_device.cpp
+   carry Copyright (c) 2024 - 2026 QDMI Maintainers and
+   Apache-2.0 WITH LLVM-exception notices. The draft supplied no root license,
+   source repository history or authorship/license evidence for most files.
+
+2. Referenced Pasqal client implementation
+   The draft's cloud client explicitly refers to QRMI's Rust Pasqal crate.
+   That upstream contains Copyright (c) 2025/2026 Pasqal SAS client notices
+   and Copyright (c) 2025/2026 IBM Corporation and Pasqal SAS model notices
+   under Apache-2.0. See docs/evidence/pasqal-contracts.md for the inspected
+   revision and file provenance. This establishes the referenced upstream's
+   terms, not permission for the complete supplied draft. Existing notices in
+   derived material must be retained; authorship of the draft remains unverified.
+
+3. Maintenance infrastructure
+   New MQSC-authored infrastructure is marked Apache-2.0 WITH LLVM-exception.
+   Reference conventions come from QDMI-on-IQM (IQM Finland Oy),
+   amazon-braket-qdmi-device and ibm-qdmi-device (MQSC), whose notices and
+   applicable licenses are preserved when code is reused.
+
+4. Bundled dependencies
+   The native library may contain CPR (MIT), curl (curl license), nlohmann/json
+   (MIT) and platform TLS libraries. Exact license texts are included under
+   licenses/. The TLS composition depends on the build/platform and repaired
+   wheel; final artifact inspection determines additional notices required.
+   QDMI generated headers are Apache-2.0 WITH LLVM-exception and retain their
+   notices. System library use does not transfer ownership to this project.
+
+Public release remains blocked pending resolution of item 1 and review of the
+actual distributed artifact's third-party notices.

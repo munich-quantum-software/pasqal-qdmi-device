@@ -6,20 +6,30 @@
 
 #include "pasqal_qdmi/constants.h" // IWYU pragma: export
 
-/// Session parameter selecting the backend: "EMU_FREE", "EMU_MPS", "EMU_FRESNEL",
-/// "FRESNEL", "FRESNEL_CAN1" or "MOCK". Defaults to $PASQAL_QDMI_BACKEND, then "EMU_FREE".
+/// NUL-terminated UTF-8 session backend, copied and fixed at init: "EMU_FREE",
+/// "EMU_MPS", "EMU_FRESNEL", "FRESNEL", "FRESNEL_CAN1" or "MOCK". Defaults to
+/// $PASQAL_QDMI_BACKEND, then "EMU_FREE".
 #define PASQAL_QDMI_DEVICE_SESSION_PARAMETER_BACKEND                           \
   QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1
 
-/// Session parameter setting the Pasqal Cloud project ID.
+/// NUL-terminated UTF-8 Pasqal project ID, copied and fixed at session init.
 #define PASQAL_QDMI_DEVICE_SESSION_PARAMETER_PROJECTID                         \
   QDMI_DEVICE_SESSION_PARAMETER_CUSTOM3
 
-/// Device property holding the Pulser devices the session's backend runs, as a JSON
-/// array of {"device_type", "specs"} with the specs in Pulser's abstract
-/// representation: the one device for a QPU, the real devices' public specs for an
-/// emulator. Not supported for the mock device.
+/// NUL-terminated UTF-8 JSON array of public Pulser constraint metadata entries
+/// {"device_type", "specs"}, copied from Pasqal as a session snapshot. These
+/// are candidate device models, not an exhaustive list of emulator-compatible
+/// sequences: emulators can also accept Pulser VirtualDevice models.
+/// Not supported for the offline mock fixture.
 #define PASQAL_QDMI_DEVICE_PROPERTY_PULSERSPECS QDMI_DEVICE_PROPERTY_CUSTOM1
 
-/// Program format for a Pulser sequence in abstract representation (JSON).
+/// NUL-terminated UTF-8 JSON for a built, measured Pulser abstract sequence.
+/// The device copies the payload. Histogram bit i addresses serialized
+/// register[i], with register[0] rightmost. Pulse construction and validation
+/// remain in Pulser.
 #define PASQAL_QDMI_PROGRAM_FORMAT_PULSER QDMI_PROGRAM_FORMAT_CUSTOM1
+
+/// Session snapshot of the selected /devices backend entry, as NUL-terminated
+/// UTF-8 JSON. Includes capacity, status, emulator and billing flags; no
+/// credentials.
+#define PASQAL_QDMI_DEVICE_PROPERTY_BACKENDMETADATA QDMI_DEVICE_PROPERTY_CUSTOM2

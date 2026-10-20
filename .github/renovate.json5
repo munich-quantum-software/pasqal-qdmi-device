@@ -1,0 +1,8 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "helpers:pinGitHubActionDigestsToSemver"],
+  enabledManagers: ["github-actions", "pep621", "pre-commit"],
+  labels: ["dependencies"],
+  schedule: ["every weekend"],
+  lockFileMaintenance: {enabled: true},
+}

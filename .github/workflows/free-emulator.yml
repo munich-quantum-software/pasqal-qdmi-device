@@ -1,0 +1,35 @@
+name: Free emulator
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pasqal-emu-free
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    environment: pasqal-emu-free
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+      - name: Build and test the installed candidate offline
+        run: uvx nox -s tests
+      - name: Validate bounded EMU_FREE execution
+        env:
+          PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+          PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+          PASQAL_PROJECT_ID: ${{ vars.PASQAL_PROJECT_ID }}
+        run: uv run --locked --group test python scripts/validate_emu_free.py --run-live --output build/emu-free.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: emu-free-evidence
+          path: build/emu-free.json
+          if-no-files-found: error

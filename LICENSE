@@ -1,0 +1,19 @@
+Pasqal QDMI Device: licensing status
+
+Copyright (c) 2026 Munich Quantum Software Company GmbH
+
+New files explicitly marked SPDX-License-Identifier: Apache-2.0 WITH
+LLVM-exception are offered under that license. Its exact text is included in
+licenses/LICENSE-APACHE2-LLVM. This statement does not relicense inherited work.
+
+The supplied qdmi-pasqal-0.2.0-src.tar.gz archive did not contain a root license
+or a complete authorship/license declaration. Two files carry inherited QDMI
+Maintainers notices under Apache-2.0 WITH LLVM-exception; these notices remain
+in place. Most original implementation files have no license declaration.
+Their redistribution permission has not been established by the archive.
+
+Consequently this repository must remain private and must not be publicly
+released until the rights holders provide the missing provenance and license
+evidence. No license for the entire inherited draft is asserted here.
+
+See NOTICE for the available attribution evidence and third-party notices.

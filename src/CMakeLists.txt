@@ -3,8 +3,7 @@ include(GNUInstallDirs)
 generate_prefixed_qdmi_headers(${QDMI_PREFIX})
 
 file(GLOB_RECURSE PUBLIC_HEADER_FILES "${CMAKE_CURRENT_BINARY_DIR}/include/*.h")
-list(APPEND PUBLIC_HEADER_FILES
-     "${PROJECT_SOURCE_DIR}/include/pasqal-qdmi-device/constants.h")
+list(APPEND PUBLIC_HEADER_FILES "${PROJECT_SOURCE_DIR}/include/pasqal-qdmi-device/constants.h")
 
 add_subdirectory(internal)
 
@@ -19,12 +18,9 @@ set_target_properties(
              VISIBILITY_INLINES_HIDDEN 1)
 target_link_libraries(${QDMI_TARGET_NAME} PRIVATE qdmi::qdmi_project_warnings
                                                   pasqal::qdmi_device_internals)
-# Keep the statically linked libcurl and cpr symbols out of the exported interface.
-if(UNIX AND NOT APPLE)
-  target_link_options(${QDMI_TARGET_NAME} PRIVATE "LINKER:--exclude-libs,ALL")
-endif()
-configure_qdmi_device_target(TARGET ${QDMI_TARGET_NAME} ID ${PASQAL_QDMI_DEVICE_ID}
-                             PREFIX ${QDMI_PREFIX})
+configure_qdmi_exports(TARGET ${QDMI_TARGET_NAME} INTERFACE device PREFIX ${QDMI_PREFIX})
+configure_qdmi_device_target(TARGET ${QDMI_TARGET_NAME} ID ${PASQAL_QDMI_DEVICE_ID} PREFIX
+                             ${QDMI_PREFIX})
 
 target_sources(
   ${QDMI_TARGET_NAME}
@@ -38,7 +34,7 @@ target_sources(
          FILES
          ${PUBLIC_HEADER_FILES})
 
-# Device catalog: one entry per Pasqal backend. The IDs double as Slurm license names.
+# Keep catalogue paths relative so installed prefixes and wheels are relocatable.
 set(PASQAL_QDMI_CATALOG_NAME "${QDMI_TARGET_NAME}.qdmi.json")
 set(PASQAL_QDMI_LIBRARY_FILE "$<TARGET_FILE_NAME:${QDMI_TARGET_NAME}>")
 configure_file("${PROJECT_SOURCE_DIR}/cmake/${QDMI_TARGET_NAME}.qdmi.json.in"
@@ -53,8 +49,7 @@ add_custom_command(
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PASQAL_QDMI_CATALOG}"
           "$<TARGET_FILE_DIR:${QDMI_TARGET_NAME}>/${PASQAL_QDMI_CATALOG_NAME}")
-set_target_properties(${QDMI_TARGET_NAME} PROPERTIES QDMI_MANIFEST_NAME
-                                                     ${PASQAL_QDMI_CATALOG_NAME})
+set_target_properties(${QDMI_TARGET_NAME} PROPERTIES QDMI_MANIFEST_NAME ${PASQAL_QDMI_CATALOG_NAME})
 set_property(
   TARGET ${QDMI_TARGET_NAME}
   APPEND
@@ -74,6 +69,12 @@ write_basic_package_version_file(
   "${QDMI_TARGET_NAME}-config-version.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY SameMinorVersion)
+
+if(WIN32)
+  set(PASQAL_QDMI_CATALOG_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}")
+else()
+  set(PASQAL_QDMI_CATALOG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}")
+endif()
 
 if(INSTALL_PASQAL_QDMI_DEVICE)
   install(
@@ -100,7 +101,7 @@ if(INSTALL_PASQAL_QDMI_DEVICE)
 
   install(
     FILES "${PASQAL_QDMI_CATALOG}"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    DESTINATION ${PASQAL_QDMI_CATALOG_INSTALL_DIR}
     COMPONENT ${QDMI_TARGET_NAME}_Runtime)
 
   install(
