@@ -11,9 +11,11 @@ build/consumer/bin/python -c "from mqt.core.qdmi import builtin_driver; print(bu
 
 Use `build/consumer/Scripts/python.exe` on Windows. The installed IDs are `pasqal.default` and `pasqal.emu-free`; both select EMU_FREE. Listing IDs reads the installed manifest without authenticating or submitting work. Install `pulser-core==1.9.0` to construct sequences; the optional `cloud` extra also includes the official `pasqal-cloud==0.24.0` SDK for comparison.
 
+Wheel builds target Linux x86_64/ARM64 with glibc >=2.34, macOS ARM64 >=13.3, and Windows x86_64. Linux x86_64 wheels require an x86-64-v2 CPU because the build image's OpenSSL package may use that baseline. The Linux image supplies OpenSSL 3 for the bundled curl; macOS wheels use Apple's system curl and TLS trust store.
+
 ## Native CMake installation
 
-A source build needs a C++20 compiler, CMake >=3.24, a build tool and TLS development headers. On Linux with OpenSSL this typically includes `libssl-dev`. CMake fetches pinned released QDMI, CPR/curl, JSON and test dependencies when installed versions are unavailable.
+A source build needs a C++20 compiler, CMake >=3.24, a build tool and TLS development headers. Bundled curl requires OpenSSL >=3 on Linux, typically provided by `libssl-dev`. CMake fetches pinned released QDMI, CPR/curl, JSON and test dependencies when installed versions are unavailable.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release

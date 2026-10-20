@@ -23,6 +23,14 @@ target_compile_features(${QDMI_TEST_TARGET_NAME} PRIVATE cxx_std_20)
 
 add_dependencies(${QDMI_TEST_TARGET_NAME} qdmi_test_pasqal_device_defs)
 
+if(WIN32)
+  add_custom_command(
+    TARGET ${QDMI_TEST_TARGET_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${QDMI_TARGET_NAME}>
+            $<TARGET_FILE_DIR:${QDMI_TEST_TARGET_NAME}>)
+endif()
+
 gtest_discover_tests(
   ${QDMI_TEST_TARGET_NAME}
   TEST_SUFFIX .mock

@@ -58,14 +58,16 @@ build = "cp311-*"
 skip = ["*-musllinux_*", "*-win_arm64"]
 archs = "auto64"
 build-frontend = "uv"
-test-command = "python -c \"from pasqal.qdmi import PASQAL_QDMI_CATALOG_PATH; from mqt.core.qdmi import builtin_driver; assert PASQAL_QDMI_CATALOG_PATH.is_file(); assert 'pasqal.emu-free' in builtin_driver.registered_device_ids()\""
+test-command = "python -I -c \"import sys; from mqt.core.qdmi import builtin_driver; assert 'pasqal.emu-free' in builtin_driver.registered_device_ids(); assert 'pasqal.qdmi' not in sys.modules; assert builtin_driver.open_device('pasqal.emu-free', custom1='MOCK').qubits_num() > 0\""
 
 [tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_34"
+manylinux-aarch64-image = "manylinux_2_34"
 before-all = "yum install -y openssl-devel"
 
 [tool.cibuildwheel.macos]
-environment = {MACOSX_DEPLOYMENT_TARGET = "13.3"}
-config-settings = {"cmake.define.CURL_BROTLI" = "OFF", "cmake.define.CURL_ZSTD" = "OFF", "cmake.define.USE_NGHTTP2" = "OFF", "cmake.define.USE_LIBIDN2" = "OFF", "cmake.define.CURL_USE_LIBSSH2" = "OFF"}
+environment = {MACOSX_DEPLOYMENT_TARGET = "13.3", CMAKE_ARGS = "-DCURL_INCLUDE_DIR=$(xcrun --show-sdk-path)/usr/include -DCURL_LIBRARY=$(xcrun --show-sdk-path)/usr/lib/libcurl.tbd"}
+config-settings = {"cmake.define.CPR_USE_SYSTEM_CURL" = "ON", "cmake.define.CURL_NO_CURL_CMAKE" = "ON", "cmake.define.CMAKE_DISABLE_FIND_PACKAGE_PkgConfig" = "ON", "cmake.define.CURL_CONFIG_EXECUTABLE" = "/usr/bin/curl-config"}
 
 [tool.cibuildwheel.windows]
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg pasqal"

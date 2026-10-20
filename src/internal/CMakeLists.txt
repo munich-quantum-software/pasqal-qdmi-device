@@ -22,6 +22,7 @@ target_compile_definitions(
   ${QDMI_INTERNAL_TARGET_NAME}
   PRIVATE QDMI_VERSION="${qdmi_library_VERSION}"
           ${QDMI_PREFIX}_QDMI_DEVICE_VERSION="${PROJECT_VERSION}" ${QDMI_PREFIX}_QDMI_device_EXPORTS
+          $<$<PLATFORM_ID:Windows>:NOMINMAX>
   INTERFACE $<$<PLATFORM_ID:Windows>:${QDMI_PREFIX}_QDMI_STATIC_DEFINE>)
 target_link_libraries(
   ${QDMI_INTERNAL_TARGET_NAME}
