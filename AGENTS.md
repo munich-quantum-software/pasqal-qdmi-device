@@ -18,7 +18,8 @@ contains validation and release commands.
   a change or concrete concern justifies it.
 - Keep machine configuration, exploratory scripts and task reports outside the
   tracked repository. Never print or commit credentials or authentication
-  responses. Cloud execution needs explicit authorization; ordinary CI is offline.
+  responses. Cloud execution needs explicit authorization; ordinary CI is
+  offline.
 - Document current contracts, limitations and useful examples. Keep review
   history and implementation plans out of product documentation.
 - Use gitmoji-led imperative commit subjects and signed commits. Preserve human

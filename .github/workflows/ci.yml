@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,6 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-26.04, macos-26, windows-2025]
+        config: [Release]
+        sanitizers: [false]
+        include:
+          - os: ubuntu-26.04
+            config: Debug
+            sanitizers: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,31 +30,17 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.12"
-      - run: uvx nox -s native tests
+      - name: Build and test native interfaces
+        env:
+          BUILD_CONFIG: ${{ matrix.config }}
+          SANITIZER_OPTION: ${{ matrix.sanitizers && '--sanitizers' || '' }}
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:strict_string_checks=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        shell: bash
+        run: uvx nox -s native -- --config "$BUILD_CONFIG" $SANITIZER_OPTION
       - name: Relocated installed consumer
+        if: ${{ !matrix.sanitizers }}
         run: cmake -P test/install.cmake
-  sanitizers:
-    name: Native Debug ASan and UBSan
-    runs-on: ubuntu-26.04
-    env:
-      ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:strict_string_checks=1
-      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Configure
-        run: >-
-          cmake -S . -B build/sanitizers -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all"
-          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all"
-      - name: Build
-        run: cmake --build build/sanitizers --config Debug --parallel 2
-      - name: Test native interfaces
-        # Python loads an ordinary interpreter without the sanitizer runtime.
-        run: >-
-          ctest --test-dir build/sanitizers -C Debug --output-on-failure
-          --timeout 600 --exclude-regex "^(pasqal_integration|transport_http)$"
   lint:
     runs-on: ubuntu-26.04
     steps:
@@ -86,7 +79,7 @@ jobs:
   required-checks-pass:
     name: Required offline checks
     if: always()
-    needs: [native, sanitizers, lint, documentation, sdist, wheel]
+    needs: [native, lint, documentation, sdist, wheel]
     runs-on: ubuntu-slim
     steps:
       - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0

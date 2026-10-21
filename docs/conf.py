@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# Copyright (c) 2025 - 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -21,11 +22,9 @@ import tomllib
 from pathlib import Path
 
 project = "Pasqal QDMI Device"
-author = "Munich Quantum Software Company GmbH"
-copyright = "2026 Munich Quantum Software Company GmbH"
-release = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())["project"][
-    "version"
-]
+author = "Lukas Burgholzer and Aleksander Wennersteen"
+copyright = "2026 Munich Quantum Software Company GmbH and Pasqal SAS"
+release = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())["project"]["version"]
 extensions = ["myst_parser", "sphinx_copybutton"]
 source_suffix = {".md": "markdown"}
 exclude_patterns = ["_build"]

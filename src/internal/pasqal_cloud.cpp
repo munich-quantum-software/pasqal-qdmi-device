@@ -22,10 +22,9 @@
 // Apache-2.0. Modified for this QDMI implementation. Upstream source:
 // https://github.com/qiskit-community/qrmi/tree/bbbfe872ea87ca435662ca26163b6fc913a3b4bb/dependencies/pasqal_cloud_client
 
-#include "pasqal_cloud.hpp"
+#include "pasqal-qdmi-device/Cloud.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <chrono>
 #include <cmath>
@@ -45,9 +44,6 @@ namespace {
 
 using json = nlohmann::json;
 
-constexpr std::array DEVICE_TYPES{"FRESNEL",    "FRESNEL_CAN1", "EMU_MPS",
-                                  "EMU_FREE",   "EMU_FRESNEL",  "EMU_SV",
-                                  "FRESNEL_SA1"};
 constexpr long long TOKEN_EXPIRY_GRACE_SECONDS = 10;
 constexpr auto AUTH_GRANT_TYPE =
     "http://auth0.com/oauth/grant-type/password-realm";
@@ -103,10 +99,7 @@ void validate_url(const std::string& url) {
 }
 
 void validate_id(std::string_view id) {
-  if (id.empty() || !std::all_of(id.begin(), id.end(), [](unsigned char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-               (c >= '0' && c <= '9') || c == '_' || c == '-';
-      })) {
+  if (!is_cloud_id(id)) {
     throw std::invalid_argument("invalid cloud identifier");
   }
 }
@@ -294,9 +287,11 @@ JobState parse_state(const std::string& state) {
 
 } // namespace
 
-bool is_device_type(std::string_view name) {
-  return std::find(DEVICE_TYPES.begin(), DEVICE_TYPES.end(), upper(name)) !=
-         DEVICE_TYPES.end();
+bool is_cloud_id(std::string_view id) {
+  return !id.empty() && std::all_of(id.begin(), id.end(), [](unsigned char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') || c == '_' || c == '-';
+  });
 }
 
 bool is_token_usable(const std::string& token, long long now) {
@@ -350,7 +345,7 @@ CloudClient::CloudClient(CloudConfig config) : config_(std::move(config)) {
   config_.auth_endpoint = normalize_auth_endpoint(config_.auth_endpoint);
   validate_url(config_.auth_endpoint);
   config_.device_type = upper(config_.device_type);
-  token_ = config_.token.value_or("");
+  token_ = std::move(config_.token).value_or("");
   if (token_.find_first_of("\r\n") != std::string::npos ||
       token_.find('\0') != std::string::npos) {
     throw std::invalid_argument("invalid bearer token");
@@ -398,7 +393,7 @@ CloudClient::bearer(Deadline deadline,
                     "are not configured");
   }
   cpr::Session session;
-  configure(session, normalize_auth_endpoint(config_.auth_endpoint), deadline);
+  configure(session, config_.auth_endpoint, deadline);
   session.SetPayload(std::move(form));
   const auto response = session.Post();
   if (response.error.code == cpr::ErrorCode::OK &&
@@ -476,53 +471,51 @@ std::string CloudClient::patch(const std::string& path) {
   return checked(session.Patch());
 }
 
-std::string CloudClient::device_spec_entries() {
+std::string CloudClient::device_spec_entries(bool is_emulator) {
   validate_id(config_.device_type);
-  json entries;
-  if (config_.device_type.starts_with("EMU")) {
-    entries =
-        field(parse_json(get("/core-fast/api/v1/devices/public-specs", false)),
-              "data");
-  } else {
-    entries =
-        json::array({field(parse_json(get("/core-fast/api/v1/devices/specs/" +
-                                          config_.device_type)),
-                           "data")});
-  }
+  const auto entries = field(
+      parse_json(get("/core-fast/api/v1/devices/public-specs", false)), "data");
   if (!entries.is_array()) {
     throw CloudError(0, "invalid cloud device specs");
   }
   json kept = json::array();
   for (const auto& entry : entries) {
-    kept.push_back({{"device_type", string_field(entry, "device_type")},
-                    {"specs", string_field(entry, "specs")}});
+    const auto device_type = string_field(entry, "device_type");
+    if (is_emulator || upper(device_type) == config_.device_type) {
+      kept.push_back({{"device_type", device_type},
+                      {"specs", string_field(entry, "specs")}});
+    }
   }
   return kept.dump();
 }
 
 std::string CloudClient::device_metadata() {
   validate_id(config_.device_type);
-  const auto devices =
-      field(parse_json(get("/core-fast/api/v1/devices?device_type=" +
-                               config_.device_type,
-                           false)),
-            "data");
-  if (!devices.is_array()) {
-    throw CloudError(0, "invalid cloud device list");
-  }
-  std::optional<std::string> selected;
-  for (const auto& device : devices) {
-    if (upper(string_field(device, "device_type")) == config_.device_type) {
-      if (selected) {
-        throw CloudError(0, "duplicate cloud backend metadata");
+  // Inactive or account-specific devices may be absent from the public list.
+  for (const bool authenticated : {false, true}) {
+    const auto devices =
+        field(parse_json(get(std::string(authenticated ? "/core-fast/api/v2/"
+                                                       : "/core-fast/api/v1/") +
+                                 "devices?device_type=" + config_.device_type,
+                             authenticated)),
+              "data");
+    if (!devices.is_array()) {
+      throw CloudError(0, "invalid cloud device list");
+    }
+    std::optional<std::string> selected;
+    for (const auto& device : devices) {
+      if (upper(string_field(device, "device_type")) == config_.device_type) {
+        if (selected) {
+          throw CloudError(0, "duplicate cloud backend metadata");
+        }
+        selected = device.dump();
       }
-      selected = device.dump();
+    }
+    if (selected) {
+      return *selected;
     }
   }
-  if (!selected) {
-    throw UnsupportedError("selected cloud backend is unavailable");
-  }
-  return *selected;
+  throw UnsupportedError("selected cloud backend is unavailable");
 }
 
 std::string CloudClient::submit_batch(const std::vector<std::string>& sequences,
@@ -553,8 +546,7 @@ CloudBatch CloudClient::batch(const std::string& batch_id, Deadline deadline) {
       parse_json(get("/core-fast/api/v2/batches/" + batch_id, true, deadline)),
       "data");
   CloudBatch result;
-  result.id = string_field(data, "id");
-  if (result.id != batch_id) {
+  if (string_field(data, "id") != batch_id) {
     throw CloudError(0, "cloud batch identifier mismatch");
   }
   const auto& ids = field(data, "job_ids");
@@ -583,8 +575,7 @@ CloudJob CloudClient::job(const std::string& job_id, Deadline deadline) {
       field(parse_json(get("/core-fast/api/v2/jobs/" + job_id, true, deadline)),
             "data");
   CloudJob result;
-  result.id = string_field(data, "id");
-  if (result.id != job_id) {
+  if (string_field(data, "id") != job_id) {
     throw CloudError(0, "cloud job identifier mismatch");
   }
   result.batch_id = string_field(data, "batch_id");
@@ -641,10 +632,6 @@ std::size_t CloudClient::queue_length() {
 void CloudClient::cancel_job(const std::string& job_id) {
   validate_id(job_id);
   patch("/core-fast/api/v2/jobs/" + job_id + "/cancel");
-}
-
-JobState CloudClient::job_state(const std::string& job_id, Deadline deadline) {
-  return job(job_id, deadline).state;
 }
 
 std::map<std::string, std::size_t>

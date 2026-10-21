@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -18,7 +18,7 @@
 
 // Map selected Pasqal backend metadata to truthful QDMI properties.
 
-#include "pasqal_specs.hpp"
+#include "pasqal-qdmi-device/Specs.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -38,6 +38,7 @@ DeviceSpecs DeviceSpecs::from_metadata(const std::string& name,
   DeviceSpecs specs;
   specs.name = name;
   specs.qubits_num = capacity.get<std::size_t>();
+  specs.is_emulator = metadata.at("is_emulator").get<bool>();
   const auto status = metadata.at("status").get<std::string>();
   const auto active = metadata.at("active").get<bool>();
   const auto availability = metadata.at("availability").get<std::string>();

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -20,15 +20,16 @@
 
 #pragma once
 
-#include "pasqal_cloud.hpp"
+#include "pasqal-qdmi-device/Cloud.hpp"
+#include "pasqal-qdmi-device/Specs.hpp"
 #include "pasqal_qdmi/device.h"
-#include "pasqal_specs.hpp"
 
 #include <cstddef>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace pasqal {
@@ -89,7 +90,7 @@ struct PASQAL_QDMI_Device_Session_impl_d {
 struct PASQAL_QDMI_Device_Job_impl_d {
   PASQAL_QDMI_Device_Session session;
   std::string id;
-  std::string batch_id;
+  bool is_batch = false;
   bool mapping_loaded = false;
   bool submission_attempted = false;
   std::vector<pasqal::Program> programs;

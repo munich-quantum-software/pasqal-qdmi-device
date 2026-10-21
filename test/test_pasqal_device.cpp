@@ -1,5 +1,6 @@
 // Copyright (c) 2024 - 2026 QDMI Maintainers
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");

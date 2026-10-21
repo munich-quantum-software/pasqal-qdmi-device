@@ -4,5 +4,5 @@
   enabledManagers: ["github-actions", "pep621", "pre-commit"],
   labels: ["dependencies"],
   schedule: ["every weekend"],
-  lockFileMaintenance: {enabled: true},
+  lockFileMaintenance: { enabled: true },
 }

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -18,8 +18,7 @@
 
 // Pasqal QDMI device: Pulser sequences on Pasqal Cloud devices and emulators.
 
-#include "pasqal_device.hpp"
-
+#include "pasqal-qdmi-device/Device.hpp"
 #include "pasqal_qdmi/device.h"
 
 #include <algorithm>
@@ -36,24 +35,16 @@
 #include <new>
 #include <nlohmann/json.hpp>
 #include <set>
-#include <sstream>
 #include <string_view>
 #include <thread>
 
 namespace {
 
-constexpr int CUSTOM_MIN = 999999995;
-constexpr int CUSTOM_MAX = 999999999;
 constexpr std::string_view BATCH_PREFIX = "pasqal-batch:";
 /// Consecutive failed status checks tolerated by `job_wait`.
 constexpr int MAX_WAIT_FAILURES = 5;
 /// Upper bound of the exponential polling delay in `job_wait`.
 constexpr std::chrono::seconds MAX_WAIT_DELAY{30};
-
-bool is_valid(int value, int max) {
-  return (value >= 0 && value < max) ||
-         (value >= CUSTOM_MIN && value <= CUSTOM_MAX);
-}
 
 bool iequals(std::string_view a, std::string_view b) {
   return std::equal(a.begin(), a.end(), b.begin(), b.end(),
@@ -62,36 +53,25 @@ bool iequals(std::string_view a, std::string_view b) {
                     });
 }
 
-template <typename T>
-int copy_value(const T& value, size_t size, void* out, size_t* size_ret) {
-  if (out != nullptr) {
-    if (size < sizeof(T)) {
-      return QDMI_ERROR_INVALIDARGUMENT;
-    }
-    std::memcpy(out, &value, sizeof(T));
-  }
-  if (size_ret != nullptr) {
-    *size_ret = sizeof(T);
-  }
-  return QDMI_SUCCESS;
-}
-
-template <typename T>
-int copy_vector(const std::vector<T>& values, size_t size, void* out,
-                size_t* size_ret) {
-  const auto bytes = values.size() * sizeof(T);
+int copy_data(const void* source, size_t bytes, size_t size, void* out,
+              size_t* size_ret) {
   if (out != nullptr) {
     if (size < bytes) {
       return QDMI_ERROR_INVALIDARGUMENT;
     }
     if (bytes != 0) {
-      std::memcpy(out, values.data(), bytes);
+      std::memcpy(out, source, bytes);
     }
   }
   if (size_ret != nullptr) {
     *size_ret = bytes;
   }
   return QDMI_SUCCESS;
+}
+
+template <typename T>
+int copy_value(const T& value, size_t size, void* out, size_t* size_ret) {
+  return copy_data(&value, sizeof(T), size, out, size_ret);
 }
 
 int copy_str(std::string_view value, size_t size, void* out, size_t* size_ret) {
@@ -187,11 +167,6 @@ void apply_authfile(PASQAL_QDMI_Device_Session_impl_d& session) {
   fill(session.client_secret, "client_secret");
 }
 
-bool has_credentials(const PASQAL_QDMI_Device_Session_impl_d& session) {
-  return session.token || (session.username && session.password) ||
-         (session.client_id && session.client_secret);
-}
-
 std::optional<QDMI_Job_Status> to_qdmi(pasqal::JobState state) {
   switch (state) {
   case pasqal::JobState::Pending:
@@ -280,12 +255,11 @@ void update_status(PASQAL_QDMI_Device_Job job) {
 }
 
 void refresh_mapping(PASQAL_QDMI_Device_Job job, pasqal::Deadline deadline) {
-  if (job->mapping_loaded || job->batch_id.empty()) {
+  if (job->mapping_loaded || !job->is_batch) {
     return;
   }
-  const auto batch = job->session->cloud->batch(job->batch_id, deadline);
-  if (batch.job_ids.empty() || (!job->programs.empty() &&
-                                batch.job_ids.size() != job->programs.size())) {
+  const auto batch = job->session->cloud->batch(job->id, deadline);
+  if (!job->programs.empty() && batch.job_ids.size() != job->programs.size()) {
     throw pasqal::CloudError(
         0, "Pasqal batch program count does not match submission");
   }
@@ -313,7 +287,7 @@ void refresh_program(PASQAL_QDMI_Device_Job job, pasqal::Program& program,
     return;
   }
   const auto metadata = job->session->cloud->job(program.id, deadline);
-  if (!job->batch_id.empty() && metadata.batch_id != job->batch_id) {
+  if (job->is_batch && metadata.batch_id != job->id) {
     throw pasqal::CloudError(0, "Pasqal job belongs to a different batch");
   }
   if (metadata.sequence) {
@@ -331,7 +305,7 @@ void refresh_program(PASQAL_QDMI_Device_Job job, pasqal::Program& program,
     if (!program.atom_count) {
       program.source = metadata.sequence;
     }
-  } else if (!program.source && job->batch_id.empty()) {
+  } else if (!program.source && !job->is_batch) {
     program.source =
         job->session->cloud->batch(metadata.batch_id, deadline).sequence;
   }
@@ -497,7 +471,7 @@ int PASQAL_QDMI_device_session_set_parameter(
     PASQAL_QDMI_Device_Session session, QDMI_Device_Session_Parameter param,
     size_t size, const void* value) {
   if (session == nullptr ||
-      !is_valid(param, QDMI_DEVICE_SESSION_PARAMETER_MAX)) {
+      QDMI_IS_INVALID_ENUM_VALUE(param, QDMI_DEVICE_SESSION_PARAMETER)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   std::optional<std::string>* field = nullptr;
@@ -541,9 +515,8 @@ int PASQAL_QDMI_device_session_set_parameter(
       return QDMI_ERROR_INVALIDARGUMENT;
     }
     if (param == QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1 &&
-        !iequals(*text, pasqal::MOCK_BACKEND) &&
-        !pasqal::is_device_type(*text)) {
-      return QDMI_ERROR_NOTSUPPORTED;
+        !pasqal::is_cloud_id(*text)) {
+      return QDMI_ERROR_INVALIDARGUMENT;
     }
     *field = std::move(text);
     return QDMI_SUCCESS;
@@ -563,12 +536,6 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
     if (session->is_mock()) {
       session->specs = pasqal::DeviceSpecs::mock();
     } else {
-      if (!pasqal::is_device_type(backend)) {
-        return QDMI_ERROR_FATAL; // e.g. a misspelled PASQAL_QDMI_BACKEND
-      }
-      if (!has_credentials(*session)) {
-        return QDMI_ERROR_PERMISSIONDENIED;
-      }
       pasqal::CloudConfig config{.device_type = backend,
                                  .project_id = session->project_id.value_or(""),
                                  .token = session->token,
@@ -585,7 +552,8 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
       auto cloud = std::make_unique<pasqal::CloudClient>(std::move(config));
       session->specs =
           pasqal::DeviceSpecs::from_metadata(backend, cloud->device_metadata());
-      session->specs.pulser_specs = cloud->device_spec_entries();
+      session->specs.pulser_specs =
+          cloud->device_spec_entries(session->specs.is_emulator);
       session->cloud = std::move(cloud);
     }
     session->initialized = true;
@@ -600,7 +568,8 @@ void PASQAL_QDMI_device_session_free(PASQAL_QDMI_Device_Session session) {
 int PASQAL_QDMI_device_session_query_device_property(
     PASQAL_QDMI_Device_Session session, QDMI_Device_Property prop, size_t size,
     void* value, size_t* size_ret) {
-  if (session == nullptr || !is_valid(prop, QDMI_DEVICE_PROPERTY_MAX)) {
+  if (session == nullptr ||
+      QDMI_IS_INVALID_ENUM_VALUE(prop, QDMI_DEVICE_PROPERTY)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (!session->initialized) {
@@ -609,6 +578,8 @@ int PASQAL_QDMI_device_session_query_device_property(
   const auto& specs = session->specs;
   return guarded([&]() -> int {
     switch (prop) {
+    case QDMI_DEVICE_PROPERTY_ID:
+      return copy_str(PASQAL_QDMI_DEVICE_ID, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_NAME:
       return copy_str(specs.name, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_VERSION:
@@ -620,18 +591,14 @@ int PASQAL_QDMI_device_session_query_device_property(
     case QDMI_DEVICE_PROPERTY_QUBITSNUM:
       return copy_value(specs.qubits_num, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_SITES:
-      return copy_vector(std::vector<PASQAL_QDMI_Site>{}, size, value,
-                         size_ret);
     case QDMI_DEVICE_PROPERTY_OPERATIONS:
-      return copy_vector(std::vector<PASQAL_QDMI_Operation>{}, size, value,
-                         size_ret);
+      return copy_data(nullptr, 0, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_QUEUELENGTH:
       return session->cloud ? copy_value(session->cloud->queue_length(), size,
                                          value, size_ret)
                             : QDMI_ERROR_NOTSUPPORTED;
     case QDMI_DEVICE_PROPERTY_SUPPORTEDPROGRAMFORMATS:
-      return copy_vector(std::vector{QDMI_PROGRAM_FORMAT_CUSTOM1}, size, value,
-                         size_ret);
+      return copy_value(QDMI_PROGRAM_FORMAT_CUSTOM1, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_CUSTOM1:
       return specs.pulser_specs.empty()
                  ? QDMI_ERROR_NOTSUPPORTED
@@ -650,7 +617,7 @@ int PASQAL_QDMI_device_session_query_site_property(
     PASQAL_QDMI_Device_Session session, PASQAL_QDMI_Site site,
     QDMI_Site_Property prop, size_t size, void* value, size_t* size_ret) {
   if (session == nullptr || site == nullptr ||
-      !is_valid(prop, QDMI_SITE_PROPERTY_MAX)) {
+      QDMI_IS_INVALID_ENUM_VALUE(prop, QDMI_SITE_PROPERTY)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (!session->initialized) {
@@ -671,7 +638,7 @@ int PASQAL_QDMI_device_session_query_operation_property(
   if (session == nullptr || operation == nullptr ||
       (num_sites > 0 && sites == nullptr) ||
       (num_params > 0 && params == nullptr) ||
-      !is_valid(prop, QDMI_OPERATION_PROPERTY_MAX)) {
+      QDMI_IS_INVALID_ENUM_VALUE(prop, QDMI_OPERATION_PROPERTY)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (!session->initialized) {
@@ -715,17 +682,18 @@ int PASQAL_QDMI_device_session_retrieve_device_job_by_id(
   return guarded([&]() -> int {
     auto retrieved = std::make_unique<PASQAL_QDMI_Device_Job_impl_d>();
     retrieved->session = session;
-    retrieved->id = job_id;
     retrieved->shots = std::nullopt;
     retrieved->submission_attempted = true;
     retrieved->status = QDMI_JOB_STATUS_SUBMITTED;
     const std::string_view id(job_id);
     if (id.starts_with(BATCH_PREFIX)) {
-      retrieved->batch_id = id.substr(BATCH_PREFIX.size());
-      if (retrieved->batch_id.empty()) {
+      retrieved->id = id.substr(BATCH_PREFIX.size());
+      retrieved->is_batch = true;
+      if (retrieved->id.empty()) {
         return QDMI_ERROR_INVALIDARGUMENT;
       }
     } else {
+      retrieved->id = job_id;
       pasqal::Program program;
       program.id = job_id;
       program.status = QDMI_JOB_STATUS_SUBMITTED;
@@ -743,7 +711,8 @@ int PASQAL_QDMI_device_session_retrieve_device_job_by_id(
 int PASQAL_QDMI_device_job_set_parameter(PASQAL_QDMI_Device_Job job,
                                          QDMI_Device_Job_Parameter param,
                                          size_t size, const void* value) {
-  if (job == nullptr || !is_valid(param, QDMI_DEVICE_JOB_PARAMETER_MAX)) {
+  if (job == nullptr ||
+      QDMI_IS_INVALID_ENUM_VALUE(param, QDMI_DEVICE_JOB_PARAMETER)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (param != QDMI_DEVICE_JOB_PARAMETER_SHOTSNUM) {
@@ -773,7 +742,7 @@ int PASQAL_QDMI_device_job_set_programs(PASQAL_QDMI_Device_Job job,
                                         size_t count, const size_t* sizes,
                                         const void* const* programs) {
   if (job == nullptr || count == 0 ||
-      !is_valid(format, QDMI_PROGRAM_FORMAT_MAX)) {
+      QDMI_IS_INVALID_ENUM_VALUE(format, QDMI_PROGRAM_FORMAT)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (format != QDMI_PROGRAM_FORMAT_CUSTOM1) {
@@ -855,14 +824,18 @@ int PASQAL_QDMI_device_job_query_property(PASQAL_QDMI_Device_Job job,
                                           QDMI_Device_Job_Property prop,
                                           size_t size, void* value,
                                           size_t* size_ret) {
-  if (job == nullptr || !is_valid(prop, QDMI_DEVICE_JOB_PROPERTY_MAX)) {
+  if (job == nullptr ||
+      QDMI_IS_INVALID_ENUM_VALUE(prop, QDMI_DEVICE_JOB_PROPERTY)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   return guarded([&]() -> int {
     switch (prop) {
     case QDMI_DEVICE_JOB_PROPERTY_ID:
-      return job->id.empty() ? QDMI_ERROR_BADSTATE
-                             : copy_str(job->id, size, value, size_ret);
+      return job->id.empty()
+                 ? QDMI_ERROR_BADSTATE
+                 : copy_str(job->is_batch ? std::string(BATCH_PREFIX) + job->id
+                                          : job->id,
+                            size, value, size_ret);
     case QDMI_DEVICE_JOB_PROPERTY_PROGRAMFORMAT:
       if (job->programs.empty()) {
         return QDMI_ERROR_BADSTATE;
@@ -904,8 +877,8 @@ int PASQAL_QDMI_device_job_submit(PASQAL_QDMI_Device_Job job) {
     job->submission_attempted = true;
     const auto code = guarded([&]() -> int {
       if (job->session->cloud) {
-        job->batch_id = job->session->cloud->submit_batch(sources, *job->shots);
-        job->id = std::string(BATCH_PREFIX) + job->batch_id;
+        job->id = job->session->cloud->submit_batch(sources, *job->shots);
+        job->is_batch = true;
         for (auto& program : job->programs) {
           program.status = QDMI_JOB_STATUS_SUBMITTED;
           program.runs = job->shots;
@@ -958,8 +931,8 @@ int PASQAL_QDMI_device_job_cancel(PASQAL_QDMI_Device_Job job) {
       job->status = QDMI_JOB_STATUS_CANCELED;
       return QDMI_SUCCESS;
     }
-    if (!job->batch_id.empty()) {
-      job->session->cloud->cancel_batch(job->batch_id);
+    if (job->is_batch) {
+      job->session->cloud->cancel_batch(job->id);
     } else {
       job->session->cloud->cancel_job(job->programs.front().id);
     }
@@ -1038,7 +1011,7 @@ int PASQAL_QDMI_device_job_get_results(PASQAL_QDMI_Device_Job job,
                                        size_t program_index,
                                        QDMI_Job_Result result, size_t size,
                                        void* data, size_t* size_ret) {
-  if (job == nullptr || !is_valid(result, QDMI_JOB_RESULT_MAX)) {
+  if (job == nullptr || QDMI_IS_INVALID_ENUM_VALUE(result, QDMI_JOB_RESULT)) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   if (program_index >= job->programs.size()) {
@@ -1060,7 +1033,9 @@ int PASQAL_QDMI_device_job_get_results(PASQAL_QDMI_Device_Job job,
   case QDMI_JOB_RESULT_HIST_KEYS:
     return copy_str(program.results->keys, size, data, size_ret);
   case QDMI_JOB_RESULT_HIST_VALUES:
-    return copy_vector(program.results->values, size, data, size_ret);
+    return copy_data(program.results->values.data(),
+                     program.results->values.size() * sizeof(size_t), size,
+                     data, size_ret);
   default:
     return QDMI_ERROR_NOTSUPPORTED;
   }

@@ -1,10 +1,29 @@
+<!-- Entries in each category are sorted by merge time, with the latest PRs appearing first. -->
+
 # Changelog
 
-## 1.0.0 — unreleased
+All notable changes to this project will be documented in this file.
 
-- Submit built, measured Pulser programs through QDMI 1.4.0 and MQT Core.
-- Support ordered native batches, fresh-session retrieval, indexed counts and confirmed cancellation.
-- Authenticate with username/password and refresh expiring tokens without retrying submissions.
-- Discover relocatable native libraries through installed Python packages and CMake catalogs.
-- Validate EMU_FREE results against the official Pasqal SDK and independent pulse simulation.
-- Distribute under Apache-2.0 WITH LLVM-exception, with automated copyright headers and dependency notices.
+The format is based on a mixture of [Keep a Changelog] and [Common Changelog].
+This project adheres to [Semantic Versioning], with the exception that minor
+releases may include breaking changes.
+
+## [Unreleased]
+
+### Added
+
+- ✨ Implement QDMI 1.4 for native, measured Pulser sequences on Pasqal Cloud
+  ([**@awennersteen**], [**@burgholzer**]).
+- ✨ Support ordered batches, indexed counts, job retrieval and cancellation
+  ([**@burgholzer**]).
+- ✨ Discover cloud systems through a relocatable device catalogue, with
+  optional MQT Core integration ([**@burgholzer**]).
+- ✨ Authenticate with Pasqal accounts and refresh access tokens automatically
+  ([**@awennersteen**], [**@burgholzer**]).
+
+[Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
+[Common Changelog]: https://common-changelog.org/
+[Semantic Versioning]: https://semver.org/spec/v2.0.0.html
+[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/commits/main/
+[**@awennersteen**]: https://github.com/awennersteen
+[**@burgholzer**]: https://github.com/burgholzer

@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# Copyright (c) 2025 - 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -94,7 +95,41 @@ else()
 endif()
 
 if(INSTALL_PASQAL_QDMI_DEVICE)
-  include("${PROJECT_SOURCE_DIR}/cmake/InstallLicenses.cmake")
+  # Copy notices from the dependencies actually bundled into this build.
+  set(LICENSE_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/licenses/${QDMI_TARGET_NAME}")
+  if(SKBUILD)
+    set(LICENSE_INSTALL_DIR "${SKBUILD_METADATA_DIR}/licenses")
+  endif()
+  install(
+    FILES "${PROJECT_SOURCE_DIR}/LICENSE"
+    DESTINATION "${LICENSE_INSTALL_DIR}"
+    COMPONENT ${QDMI_TARGET_NAME}_Runtime)
+  foreach(DEPENDENCY IN ITEMS cpr nlohmann_json curl)
+    FetchContent_GetProperties(${DEPENDENCY})
+    if(${DEPENDENCY}_SOURCE_DIR)
+      file(GLOB DEPENDENCY_LICENSE "${${DEPENDENCY}_SOURCE_DIR}/LICENSE"
+           "${${DEPENDENCY}_SOURCE_DIR}/LICENSE.MIT" "${${DEPENDENCY}_SOURCE_DIR}/COPYING")
+      install(
+        FILES ${DEPENDENCY_LICENSE}
+        DESTINATION "${LICENSE_INSTALL_DIR}/${DEPENDENCY}"
+        COMPONENT ${QDMI_TARGET_NAME}_Runtime)
+    endif()
+  endforeach()
+  # Linux wheel repair bundles the system OpenSSL libraries.
+  if(SKBUILD
+     AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+     AND CURL_USE_OPENSSL)
+    find_file(
+      OPENSSL_LICENSE
+      NAMES LICENSE.txt copyright
+      PATHS /usr/share/licenses/openssl-libs /usr/share/doc/libssl-dev
+      NO_DEFAULT_PATH REQUIRED)
+    file(REAL_PATH "${OPENSSL_LICENSE}" OPENSSL_LICENSE_FILE)
+    install(
+      FILES "${OPENSSL_LICENSE_FILE}"
+      DESTINATION "${LICENSE_INSTALL_DIR}/openssl"
+      COMPONENT ${QDMI_TARGET_NAME}_Runtime)
+  endif()
 
   install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/${QDMI_TARGET_NAME}-config.cmake"

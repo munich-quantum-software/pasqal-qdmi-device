@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# Copyright (c) 2025 - 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -16,90 +17,240 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=1.1"]
 build-backend = "scikit_build_core.build"
+requires = [ "scikit-build-core>=1.1" ]
+
 
 [project]
 name = "pasqal-qdmi"
 version = "1.0.0"
-description = "Native Pulser execution on Pasqal through QDMI"
+description = "Pasqal QDMI Device Implementation"
 readme = "README.md"
+license = "Apache-2.0 WITH LLVM-exception"
+license-files = [ "LICENSE" ]
 requires-python = ">=3.11"
-license-files = ["LICENSE"]
-authors = [{name = "Munich Quantum Software Company GmbH"}]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
-  "Programming Language :: Python :: 3 :: Only",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: C++",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering :: Quantum Computing",
   "Typing :: Typed",
 ]
-dependencies = ["mqt-core>=4.1.1,<5"]
+dynamic = [ "import-names", "import-namespaces" ]
+
+[[project.authors]]
+name = "Lukas Burgholzer"
+email = "burgholzer@me.com"
+
+[[project.authors]]
+name = "Aleksander Wennersteen"
+email = "aleksander.wennersteen@pasqal.com"
 
 [project.optional-dependencies]
-pulser = ["pulser-core==1.9.0"]
-cloud = ["pulser-core==1.9.0", "pasqal-cloud==0.24.0"]
+core = [ "mqt-core>=4.1.1" ]
+pulser = [ "pulser-core>=1.9" ]
+cloud = [ "pasqal-cloud>=0.24" ]
 
 [project.urls]
-Repository = "https://github.com/munich-quantum-software/pasqal-qdmi-device"
+Homepage = "https://github.com/munich-quantum-software/pasqal-qdmi-device"
+Documentation = "https://pasqal-qdmi-device.readthedocs.io/en/stable/"
 Issues = "https://github.com/munich-quantum-software/pasqal-qdmi-device/issues"
 
-[project.entry-points."mqt.core.qdmi.manifests"]
-pasqal = "pasqal.qdmi"
+[project.entry-points]
+"mqt.core.qdmi.manifests".pasqal = "pasqal.qdmi"
+
 
 [dependency-groups]
-build = ["build>=1.2.2", "scikit-build-core>=1.1"]
-test = ["pytest>=8", "pulser-core==1.9.0", "pulser-simulation==1.9.0", "pasqal-cloud==0.24.0"]
-docs = ["sphinx>=8,<10", "myst-parser>=4,<6", "furo>=2025.12.19", "sphinx-copybutton>=0.5.2"]
-lint = ["ruff==0.17.0", "cmakelang==0.6.13", "pyyaml>=6", "check-jsonschema>=0.38", "prek>=0.3"]
+dev = [
+  { include-group = "build" },
+  { include-group = "test" },
+  "nox>=2026.8.10",
+]
+test = [
+  "mqt-core>=4.1.1",
+  "numpy>=2.1",
+  "pasqal-cloud>=0.24",
+  "pulser-core>=1.9",
+  "pulser-simulation>=1.9",
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1",
+  "pytest-sugar>=1.1.1",
+  "pytest-xdist>=3.8",
+]
+docs = [
+  "furo>=2025.12.19",
+  "myst-parser>=4",
+  "sphinx>=9",
+  "sphinx-copybutton>=0.5.2",
+]
+build = [ "scikit-build-core>=1.1" ]
+
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"
-build-dir = "build/wheel/{wheel_tag}/{build_type}"
-build.targets = ["pasqal-qdmi-device"]
-cmake.version = "CMakeLists.txt"
-cmake.define.BUILD_PASQAL_QDMI_TESTS = "OFF"
-cmake.define.INSTALL_PASQAL_QDMI_DEVICE = "ON"
-cmake.define.CMAKE_INSTALL_LIBDIR = "lib"
-wheel.py-api = "py311"
-wheel.packages = ["python/pasqal"]
-wheel.install-dir = "pasqal/qdmi/data"
-install.components = ["pasqal-qdmi-device_Runtime", "pasqal-qdmi-device_Development"]
-sdist.exclude = [".git", ".venv", ".nox", "build*", "dist", "docs/_build"]
+build-dir = "build/{wheel_tag}/{build_type}"
+
+[tool.scikit-build.build]
+targets = [ "pasqal-qdmi-device" ]
+
+[tool.scikit-build.cmake]
+version = "CMakeLists.txt"
+
+[tool.scikit-build.cmake.define]
+BUILD_PASQAL_QDMI_TESTS = "OFF"
+INSTALL_PASQAL_QDMI_DEVICE = "ON"
+CMAKE_INSTALL_LIBDIR = "lib"
+
+[tool.scikit-build.ninja]
+make-fallback = true
+
+[tool.scikit-build.sdist]
+
+exclude = [
+  "**/docs",
+  "**/test",
+  ".*",
+  "build*",
+  "dist",
+]
+
+[tool.scikit-build.wheel]
+py-api = "py311"
+expand-macos-universal-tags = true
+packages = [ "python/pasqal" ]
+install-dir = "pasqal/qdmi/data"
+
+[tool.scikit-build.install]
+components = [ "pasqal-qdmi-device_Runtime", "pasqal-qdmi-device_Development" ]
+
+
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { git = { commit = true, tags = true } },
+  { file = "CMakeLists.txt" },
+  { file = "cmake/**" },
+  { file = "src/**" },
+  { file = "include/**" },
+]
+
+[tool.uv.sources]
+pasqal-qdmi = { workspace = true }
+
 
 [tool.cibuildwheel]
-build = "cp311-*"
-skip = ["*-musllinux_*", "*-win_arm64"]
+build = "cp3*"
+skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
-test-groups = ["test"]
-test-sources = ["test"]
-test-command = "python -I -m pytest test/python/test_installed.py test/test_pasqal_integration.py test/test_transport_http.py"
+test-command = "python -I -m pytest test"
+test-groups = [ "test" ]
+test-sources = [ "test", "pyproject.toml" ]
 
 [tool.cibuildwheel.linux]
+before-all = "yum install -y openssl-devel"
 manylinux-x86_64-image = "manylinux_2_34"
 manylinux-aarch64-image = "manylinux_2_34"
-before-all = "yum install -y openssl-devel"
 
 [tool.cibuildwheel.macos]
-environment = {MACOSX_DEPLOYMENT_TARGET = "13.3", CMAKE_ARGS = "-DCURL_INCLUDE_DIR=$(xcrun --show-sdk-path)/usr/include -DCURL_LIBRARY=$(xcrun --show-sdk-path)/usr/lib/libcurl.tbd"}
-config-settings = {"cmake.define.CPR_USE_SYSTEM_CURL" = "ON", "cmake.define.CURL_NO_CURL_CMAKE" = "ON", "cmake.define.CMAKE_DISABLE_FIND_PACKAGE_PkgConfig" = "ON", "cmake.define.CURL_CONFIG_EXECUTABLE" = "/usr/bin/curl-config"}
+config-settings = { "cmake.define.CPR_USE_SYSTEM_CURL" = "ON", "cmake.define.CURL_NO_CURL_CMAKE" = "ON", "cmake.define.CMAKE_DISABLE_FIND_PACKAGE_PkgConfig" = "ON", "cmake.define.CURL_CONFIG_EXECUTABLE" = "/usr/bin/curl-config" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "13.3", CMAKE_ARGS = "-DCURL_INCLUDE_DIR=$(xcrun --show-sdk-path)/usr/include -DCURL_LIBRARY=$(xcrun --show-sdk-path)/usr/lib/libcurl.tbd" }
 
 [tool.cibuildwheel.windows]
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg pasqal"
 
-[tool.uv]
-cache-keys = [{file = "pyproject.toml"}, {file = "CMakeLists.txt"}, {file = "cmake/**"}, {file = "src/**"}, {file = "include/**"}]
 
 [tool.ruff]
-line-length = 100
-target-version = "py311"
-src = ["python"]
+line-length = 120
+namespace-packages = [ "pasqal" ]
+src = [ "python" ]
+preview = true
+fix = true
+unsafe-fixes = true
+show-fixes = true
+
+[tool.ruff.lint.per-file-ignores]
+"docs/**" = [ "INP001", "T20" ]
+"examples/**" = [ "INP001", "T20" ]
+"docs/conf.py" = [ "A001" ]
+"python/pasqal/qdmi/__init__.py" = [ "RUF067" ]
+# These suites also run through CTest with the Python standard library alone.
+"test/test_*.py" = [ "PT009", "PT027" ]
+"test/**" = [ "INP001", "T20" ]
+
+[tool.ruff.lint.isort]
+known-first-party = [ "pasqal.qdmi" ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "UP"]
+select = [ "ALL" ]
+ignore = [
+  "C90",     # <...> too complex
+  "COM812",  # Conflicts with formatter
+  "PLR09",   # Too many <...>
+  "PLR2004", # Magic value used in comparison
+  "S101",    # Use of assert detected
+  "S404",    # `subprocess` module is possibly insecure
+  "TID252"  # Prefer absolute imports over relative imports from parent modules
+]
+future-annotations = true
 
-[tool.pytest.ini_options]
-testpaths = ["test"]
-addopts = "-ra"
-markers = ["live: explicit bounded EMU_FREE execution (never routine CI)"]
+
+[tool.repo-review.ignore]
+GH200 = "We use Renovate instead of Dependabot"
+PC160 = "We use a mirror of crate-ci/typos"
+PC170 = "We do not use rST files anymore"
+
+
+[tool.pyproject-fmt]
+generate_python_version_classifiers = false
+table_format = "long"
+sub_table_spacing = "\n"
+separate_root_table = "\n\n"
+
+
+[tool.typos]
+
+[tool.typos.default]
+extend-ignore-re = [
+  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",                      # ignore line
+  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on", # ignore block
+]
+
+
+[tool.ty.src]
+exclude = [
+  "docs/**",
+]
+
+[tool.ty.environment]
+extra-paths = [ "test" ]
+
+[tool.ty.terminal]
+# Error if ty emits any warning-level diagnostics.
+error-on-warning = true
+
+
+[tool.pytest]
+addopts = [ "-ra" ]
+filterwarnings = [ "error" ]
+log_level = "INFO"
+minversion = "9.1"
+pythonpath = [ "test" ]
+strict = true
+testpaths = [ "test" ]

@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# Copyright (c) 2025 - 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -27,6 +28,7 @@ from pulser.devices import MockDevice
 
 
 def main() -> None:
+    """Submit a measured sequence and retain its ID before waiting for results."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--auth-file", required=True)
     args = parser.parse_args()

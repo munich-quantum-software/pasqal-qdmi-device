@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -33,6 +33,7 @@ struct DeviceSpecs {
   std::string name;
   QDMI_Device_Status status = QDMI_DEVICE_STATUS_OFFLINE;
   std::size_t qubits_num = 0;
+  bool is_emulator = false;
   std::string pulser_specs;
   std::string backend_metadata;
 

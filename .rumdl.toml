@@ -1,0 +1,12 @@
+[per-file-flavor]
+"docs/**" = "myst"
+
+[MD013]
+line-length = 80
+code-blocks = false
+reflow = true
+reflow-mode = "normalize"
+
+[MD060]
+enabled = true
+style = "aligned"

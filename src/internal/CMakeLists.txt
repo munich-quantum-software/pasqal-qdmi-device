@@ -1,4 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
+# Copyright (c) 2025 - 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -37,8 +38,10 @@ target_include_directories(
 get_target_property(qdmi_library_VERSION qdmi::qdmi VERSION)
 target_compile_definitions(
   ${QDMI_INTERNAL_TARGET_NAME}
-  PRIVATE QDMI_VERSION="${qdmi_library_VERSION}"
-          ${QDMI_PREFIX}_QDMI_DEVICE_VERSION="${PROJECT_VERSION}" ${QDMI_PREFIX}_QDMI_device_EXPORTS
+  PRIVATE ${QDMI_PREFIX}_QDMI_DEVICE_ID="${PASQAL_QDMI_DEVICE_ID}"
+          QDMI_VERSION="${qdmi_library_VERSION}"
+          ${QDMI_PREFIX}_QDMI_DEVICE_VERSION="${PROJECT_VERSION}"
+          ${QDMI_PREFIX}_QDMI_device_EXPORTS
           $<$<PLATFORM_ID:Windows>:NOMINMAX>
   INTERFACE $<$<PLATFORM_ID:Windows>:${QDMI_PREFIX}_QDMI_STATIC_DEFINE>)
 target_link_libraries(

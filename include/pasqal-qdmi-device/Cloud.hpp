@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2026 Pasqal SAS
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -71,7 +71,6 @@ using Deadline = std::optional<std::chrono::steady_clock::time_point>;
 enum class JobState { Pending, Running, Canceling, Done, Canceled, Error };
 
 struct CloudJob {
-  std::string id;
   std::string batch_id;
   JobState state;
   std::optional<std::size_t> runs;
@@ -79,7 +78,6 @@ struct CloudJob {
 };
 
 struct CloudBatch {
-  std::string id;
   std::vector<std::string> job_ids;
   std::optional<std::string> sequence;
 };
@@ -96,8 +94,8 @@ struct CloudConfig {
   std::optional<std::string> client_secret;
 };
 
-/// Return whether `name` is a Pasqal Cloud device type (case-insensitive).
-bool is_device_type(std::string_view name);
+/// Return whether an identifier can safely be used in a cloud URL path.
+bool is_cloud_id(std::string_view id);
 
 /// Return whether `token` is usable at `now` (Unix seconds): non-empty and not
 /// within 10 s of its JWT expiry. Tokens without a JWT expiry are usable.
@@ -111,7 +109,7 @@ public:
   /// {"device_type", "specs"} with the specs in Pulser's abstract
   /// representation: the one device for a QPU, the real devices' public specs
   /// for an emulator.
-  std::string device_spec_entries();
+  std::string device_spec_entries(bool is_emulator);
   /// Selected backend's public metadata, independently of Pulser device specs.
   std::string device_metadata();
   /// Submit one closed native batch and return its ID without follow-up reads.
@@ -123,8 +121,6 @@ public:
   void cancel_batch(const std::string& batch_id);
   std::size_t queue_length();
   void cancel_job(const std::string& job_id);
-  JobState job_state(const std::string& job_id,
-                     Deadline deadline = std::nullopt);
   /// Measurement counts of the finished job, keyed by bitstring.
   std::map<std::string, std::size_t>
   job_counts(const std::string& job_id, Deadline deadline = std::nullopt);

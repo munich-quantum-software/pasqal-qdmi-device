@@ -1,26 +1,87 @@
+![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)
+![OS](https://img.shields.io/badge/os-linux%20%7C%20macos%20%7C%20windows-blue?style=flat-square)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20WITH%20LLVM--exception-blue.svg?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/badge/CI-GitHub_Actions-blue?style=flat-square&logo=github)](https://github.com/munich-quantum-software/pasqal-qdmi-device/actions/workflows/ci.yml)
+
 # Pasqal QDMI Device
 
-MQSC-maintained QDMI device for submitting native Pulser programs to Pasqal, a full-stack neutral-atom quantum computing company. MQT Core supplies Python bindings, discovery and job/result handling; Pulser constructs the pulse programs.
+An implementation of the
+[Quantum Device Management Interface (QDMI)](https://github.com/Munich-Quantum-Software-Stack/QDMI)
+for Pasqal neutral-atom quantum processors and emulators.
 
-Version 1.0 targets released QDMI 1.4.0 and MQT Core 4.1.1 or later. The validated backend is **EMU_FREE**, an unbilled emulator supporting up to 12 atoms. Runtime metadata is authoritative. Hardware execution has not been validated.
+The library exposes Pasqal Cloud through the vendor-neutral QDMI C interface. It
+submits [Pulser](https://pulser.readthedocs.io/) pulse sequences, queries device
+capabilities and queue information, and retrieves measurement results. Python
+applications can use the shared [MQT Core](https://mqt.readthedocs.io/) QDMI
+API.
 
-## Install and check offline
+<!-- rumdl-disable MD033 -->
+<p align="center">
+  <a href="https://www.pasqal.com/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/_static/logo-pasqal-dark.svg">
+      <img src="docs/_static/logo-pasqal-light.svg" width="260" alt="Pasqal">
+    </picture>
+  </a>
+</p>
+<!-- rumdl-enable MD033 -->
 
-```sh
-uv build
-uv venv build/consumer
-uv pip install --python build/consumer/bin/python dist/pasqal_qdmi-*.whl
-build/consumer/bin/python -c "from mqt.core.qdmi import builtin_driver; print(builtin_driver.registered_device_ids())"
-uvx nox -s native tests docs
-cmake -P test/install.cmake
+## Key Features
+
+- A stable generic device, `pasqal.default`, for runtime configuration.
+- An installed catalogue of stable IDs for Pasqal Cloud systems.
+- Native Pulser programs and ordered batches through QDMI 1.4.
+- Device metadata, queue length, indexed counts, job retrieval and cancellation.
+- Password-realm authentication with automatic token refresh.
+- A native C++ library and optional Python integration through MQT Core.
+
+The provider accepts built, measured Pulser sequences. It does not compile gate
+circuits into pulses. EMU_FREE is validated end to end; access to other
+emulators and quantum processors depends on your Pasqal account and region.
+
+## Getting Started
+
+Build and install the Python package with the optional Core and Pulser
+integrations:
+
+```console
+uv pip install '.[core,pulser]'
 ```
 
-On Windows the consumer interpreter is `build/consumer/Scripts/python.exe`. No cloud credentials are required for building, discovery, or normal tests. Source builds require CMake >=3.24, a C++20 compiler and TLS development libraries.
+Building from source requires a C++20 compiler, CMake 3.24 or newer, and TLS
+development libraries. A native installation does not require Python:
 
-See [installation](docs/installation.md), [authentication](docs/authentication.md), [end-to-end usage](docs/usage.md), [capabilities](docs/capabilities.md), [development](docs/development.md) and [maintenance](docs/maintenance.md). Build the offline HTML documentation with `uvx nox -s docs`.
+```console
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PASQAL_QDMI_TESTS=OFF
+cmake --build build --config Release
+cmake --install build --prefix /path/to/install
+```
+
+See [installation](docs/installation.md) for wheel installation and platform
+support.
+
+## Where to Start
+
+| I want to...                                          | Read...                                     |
+| ----------------------------------------------------- | ------------------------------------------- |
+| install the package or build from source              | [Installation](docs/installation.md)        |
+| configure my account and project                      | [Authentication](docs/authentication.md)    |
+| choose a cloud system and understand its capabilities | [Device capabilities](docs/capabilities.md) |
+| submit Pulser sequences and retrieve results          | [Usage](docs/usage.md)                      |
+| diagnose authentication or job failures               | [Troubleshooting](docs/troubleshooting.md)  |
+| develop and test the provider                         | [Development](docs/development.md)          |
+
+## Contributors and Support
+
+The Pasqal QDMI Device is developed by [MQSC](https://mq.sc) and
+[Pasqal](https://www.pasqal.com/).
+
+Please use
+[GitHub Issues](https://github.com/munich-quantum-software/pasqal-qdmi-device/issues)
+for bug reports and feature requests.
 
 ## License
 
-This project is licensed under [Apache-2.0 WITH LLVM-exception](LICENSE). Builds include the applicable dependency license texts alongside installed artifacts. Copyright and SPDX headers are maintained by the `license-tools` pre-commit hook.
-
-Live verification is a separate explicit command and only targets EMU_FREE.
+The project is licensed under the Apache License 2.0 with LLVM exceptions; see
+[LICENSE](LICENSE). The Pasqal logo is used according to
+[Pasqal's brand guidelines](https://www.pasqal.com/legal/brand-guidelines/).

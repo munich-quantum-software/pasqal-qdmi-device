@@ -19,6 +19,70 @@
         "session": {
           "custom1": "EMU_FREE"
         }
+      },
+      {
+        "id": "pasqal.emu-fresnel",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "EMU_FRESNEL"
+        }
+      },
+      {
+        "id": "pasqal.emu-mps",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "EMU_MPS"
+        }
+      },
+      {
+        "id": "pasqal.emu-sv",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "EMU_SV"
+        }
+      },
+      {
+        "id": "pasqal.emu-tn",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "EMU_TN"
+        }
+      },
+      {
+        "id": "pasqal.fresnel",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "FRESNEL"
+        }
+      },
+      {
+        "id": "pasqal.fresnel-can1",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "FRESNEL_CAN1"
+        }
+      },
+      {
+        "id": "pasqal.fresnel-sa1",
+        "library": "@PASQAL_QDMI_LIBRARY_FILE@",
+        "prefix": "PASQAL",
+        "enabled": true,
+        "session": {
+          "custom1": "FRESNEL_SA1",
+          "base-url": "https://apis.sa.pasqal.cloud"
+        }
       }
     ]
   }

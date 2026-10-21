@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
+// Copyright (c) 2025 - 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -15,8 +16,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include "pasqal-qdmi-device/Device.hpp"
 #include "pasqal-qdmi-device/constants.h"
-#include "pasqal_device.hpp"
 
 #include <cstring>
 #include <gtest/gtest.h>
@@ -126,19 +127,16 @@ TEST(Session, NullValueProbesWithoutClearing) {
   PASQAL_QDMI_device_session_free(session);
 }
 
-TEST(Session, UnknownBackendIsRejected) {
+TEST(Session, BackendIdentifiersAreValidatedWithoutAnAllowlist) {
   auto* session = session_with({});
-  EXPECT_EQ(set_str(session, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "FRESNL"),
-            QDMI_ERROR_NOTSUPPORTED);
-  PASQAL_QDMI_device_session_free(session);
-}
-
-TEST(Session, InitWithoutCredentialsIsDenied) {
-  auto* session =
-      session_with({{QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "FRESNEL"},
-                    {QDMI_DEVICE_SESSION_PARAMETER_AUTHFILE, "/nonexistent"}});
-  EXPECT_EQ(PASQAL_QDMI_device_session_init(session),
-            QDMI_ERROR_PERMISSIONDENIED);
+  for (const auto* backend : {"emu_tn", "FRESNEL_SA1", "EMU_FUTURE"}) {
+    EXPECT_EQ(set_str(session, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, backend),
+              QDMI_SUCCESS);
+  }
+  for (const auto* backend : {"", "../devices", "EMU_FREE?query=1"}) {
+    EXPECT_EQ(set_str(session, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, backend),
+              QDMI_ERROR_INVALIDARGUMENT);
+  }
   PASQAL_QDMI_device_session_free(session);
 }
 
@@ -212,6 +210,21 @@ TEST(Job, MockLifecycleReturnsHistogram) {
   PASQAL_QDMI_device_session_free(session);
 }
 
+TEST(Session, ReportsStableDeviceId) {
+  auto* session = mock_session();
+  size_t size = 0;
+  ASSERT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, QDMI_DEVICE_PROPERTY_ID, 0, nullptr, &size),
+            QDMI_SUCCESS);
+  ASSERT_GT(size, 1U);
+  std::string id(size, '\0');
+  EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, QDMI_DEVICE_PROPERTY_ID, size, id.data(), nullptr),
+            QDMI_SUCCESS);
+  EXPECT_EQ(id.back(), '\0');
+  PASQAL_QDMI_device_session_free(session);
+}
+
 TEST(Session, NativePulserHasNoFabricatedTopology) {
   auto* session = mock_session();
   for (const auto property :
@@ -221,6 +234,16 @@ TEST(Session, NativePulserHasNoFabricatedTopology) {
                   session, property, 0, nullptr, &size),
               QDMI_SUCCESS);
     EXPECT_EQ(size, 0U);
+    char sentinel = '#';
+    EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                  session, property, 0, &sentinel, nullptr),
+              QDMI_SUCCESS);
+    EXPECT_EQ(sentinel, '#');
+    EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                  session, property, sizeof(sentinel), &sentinel, &size),
+              QDMI_SUCCESS);
+    EXPECT_EQ(size, 0U);
+    EXPECT_EQ(sentinel, '#');
   }
   EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
                 session, QDMI_DEVICE_PROPERTY_COUPLINGMAP, 0, nullptr, nullptr),
@@ -267,19 +290,13 @@ TEST(Cloud, TokenUsability) {
   EXPECT_FALSE(pasqal::is_token_usable("h.!!!.s", 100));
 }
 
-TEST(Cloud, DeviceTypesAreCaseInsensitive) {
-  EXPECT_TRUE(pasqal::is_device_type("emu_free"));
-  EXPECT_TRUE(pasqal::is_device_type("FRESNEL_CAN1"));
-  EXPECT_FALSE(pasqal::is_device_type("MOCK"));
-}
-
 TEST(Cloud, ExpiredDeadlineStopsStatusRequest) {
   pasqal::CloudConfig config;
   config.base_url = "http://127.0.0.1:1";
   config.token = "token";
   pasqal::CloudClient cloud(config);
-  EXPECT_THROW(cloud.job_state("job", std::chrono::steady_clock::now() -
-                                          std::chrono::seconds(1)),
+  EXPECT_THROW(cloud.job("job", std::chrono::steady_clock::now() -
+                                    std::chrono::seconds(1)),
                pasqal::TimeoutError);
 }
 
@@ -289,8 +306,8 @@ TEST(Cloud, ExpiredDeadlineStopsTokenRefresh) {
   config.username = "user";
   config.password = "password";
   pasqal::CloudClient cloud(config);
-  EXPECT_THROW(cloud.job_state("job", std::chrono::steady_clock::now() -
-                                          std::chrono::seconds(1)),
+  EXPECT_THROW(cloud.job("job", std::chrono::steady_clock::now() -
+                                    std::chrono::seconds(1)),
                pasqal::TimeoutError);
 }
 
@@ -454,7 +471,7 @@ TEST_F(ProgramListTest, CancelsAllUnsubmittedPrograms) {
 
 TEST(Specs, UsesSelectedBackendCapacityAndAvailability) {
   const auto metadata =
-      R"({"max_atom_num":12,"status":"UP","active":true,"availability":"ACTIVE"})";
+      R"({"max_atom_num":12,"status":"UP","active":true,"availability":"ACTIVE","is_emulator":true})";
   const auto specs = pasqal::DeviceSpecs::from_metadata("EMU_FREE", metadata);
   EXPECT_EQ(specs.qubits_num, 12U);
   EXPECT_EQ(specs.status, QDMI_DEVICE_STATUS_IDLE);
