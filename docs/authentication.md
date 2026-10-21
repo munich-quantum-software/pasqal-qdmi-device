@@ -34,11 +34,12 @@ whose response was lost; see
 
 For applications using QDMI `AUTHFILE`, the file is a private UTF-8 `key=value`
 file. Recognized keys are `username`, `password`, `project_id`, `auth_endpoint`,
-`token`, `client_id`, and `client_secret`. Blank lines and lines beginning with
-`#` or `;` are ignored. Surrounding whitespace and quotes are trimmed; no escape
-syntax is interpreted. Explicit session parameters take precedence. Prefer
-direct `username`/`password` arguments for passwords whose surrounding
-whitespace or quotes are significant.
+`token`, `client_id`, and `client_secret`. `auth_endpoint` and `AUTHURL` require
+a complete HTTPS URL. Blank lines and lines beginning with `#` or `;` are
+ignored. Surrounding whitespace and quotes are trimmed; no escape syntax is
+interpreted. Explicit session parameters take precedence. Prefer direct
+`username`/`password` arguments for passwords whose surrounding whitespace or
+quotes are significant.
 
 Store an auth file outside the checkout, restrict it to its owner (for example,
 `chmod 600 ~/.config/pasqal-qdmi.auth` on Unix), and pass its path as

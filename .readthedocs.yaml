@@ -1,16 +1,18 @@
 version: 2
+
 sphinx:
   configuration: docs/conf.py
-  fail_on_warning: true
+
 build:
   os: ubuntu-26.04
   tools:
-    python: "3.12"
+    python: "3.14"
+  apt_packages:
+    - libssl-dev
   jobs:
-    post_create_environment:
-      - pip install uv
-    post_install:
-      - uv sync --locked --only-group docs
+    pre_build:
+      - python -m pip install uv
     build:
       html:
-        - uv run --locked --only-group docs sphinx-build -n -W --keep-going -b html docs "$READTHEDOCS_OUTPUT/html"
+        - uvx nox --non-interactive -s docs
+        - mkdir -p "$READTHEDOCS_OUTPUT/html" && cp -R docs/_build/html/. "$READTHEDOCS_OUTPUT/html"

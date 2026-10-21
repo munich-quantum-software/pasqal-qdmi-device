@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2025 - 2026 Pasqal SAS
+// Copyright (c) 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -282,8 +282,9 @@ TEST(Cloud, TokenUsability) {
   EXPECT_TRUE(pasqal::is_token_usable("opaque-token", 0));
   EXPECT_FALSE(pasqal::is_token_usable("h.eyJleHAiOjF9.s", 100)); // exp 1
   EXPECT_TRUE(pasqal::is_token_usable("h.eyJleHAiOjk5OTk5OTk5OTl9.s", 100));
-  EXPECT_TRUE(pasqal::is_token_usable("h.eyJleHAiOiI5OTk5OTk5OTk5In0.s",
-                                      100)); // string exp
+  EXPECT_FALSE(pasqal::is_token_usable("h.eyJleHAiOiI5OTk5OTk5OTk5In0.s", 100));
+  EXPECT_TRUE(pasqal::is_token_usable("h.eyJleHAiOjExMC41fQ.s", 100));
+  EXPECT_FALSE(pasqal::is_token_usable("h.eyJleHAiOjExMC41fQ.s", 101));
   EXPECT_FALSE(pasqal::is_token_usable("h.eyJleHAiOjk5OTk5OTk5OTl9.s",
                                        9999999995));                // grace
   EXPECT_TRUE(pasqal::is_token_usable("h.eyJzdWIiOiJ4In0.s", 100)); // no exp

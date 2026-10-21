@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -16,32 +16,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Installed artifacts for the Pasqal QDMI device.
+"""Python wrapper for exposing the Pasqal QDMI device library."""
 
-MQT Core discovers the catalogue without importing this module or loading the
-native device. Use ``mqt.core.qdmi`` for sessions and jobs.
-"""
+# ruff: file-ignore[non-empty-init-module]
 
 import sys
 from importlib.metadata import distribution
 from pathlib import Path
 
-__version__ = distribution("pasqal-qdmi").version
-_DATA = Path(str(distribution("pasqal-qdmi").locate_file("pasqal/qdmi/data"))).resolve()
-_LIBRARY_DIR = _DATA / ("bin" if sys.platform == "win32" else "lib")
-PASQAL_QDMI_DEVICE_ID = "pasqal.default"
-PASQAL_QDMI_PREFIX = "PASQAL"
-PASQAL_QDMI_CATALOG_PATH = _LIBRARY_DIR / "pasqal-qdmi-device.qdmi.json"
-PASQAL_QDMI_INCLUDE_DIR = _DATA / "include"
-PASQAL_QDMI_CMAKE_DIR = _DATA / "share" / "cmake"
-if sys.platform == "win32":
-    _NAMES = ("pasqal-qdmi-device.dll", "libpasqal-qdmi-device.dll")
-else:
-    _NAMES = ("libpasqal-qdmi-device." + ("dylib" if sys.platform == "darwin" else "so"),)
-PASQAL_QDMI_LIBRARY_PATH = next(
-    (_LIBRARY_DIR / name for name in _NAMES if (_LIBRARY_DIR / name).is_file()),
-    _LIBRARY_DIR / _NAMES[0],
-)
+from ._version import version as __version__
 
 __all__ = [
     "PASQAL_QDMI_CATALOG_PATH",
@@ -52,3 +35,75 @@ __all__ = [
     "PASQAL_QDMI_PREFIX",
     "__version__",
 ]
+
+PASQAL_QDMI_DEVICE_ID = "pasqal.default"
+PASQAL_QDMI_PREFIX = "PASQAL"
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
+dist = distribution("pasqal-qdmi")
+located_include_dir = dist.locate_file("pasqal/qdmi/data/include/pasqal_qdmi")
+resolved_include_dir = Path(str(located_include_dir)).resolve(strict=True)
+
+_PASQAL_QDMI_DATA = resolved_include_dir.parents[1]
+
+
+def _resolve_library_dir() -> Path:
+    """Return the directory containing the packaged Pasqal QDMI shared library.
+
+    Raises:
+        FileNotFoundError: If the expected library directory does not exist.
+    """
+    if sys.platform == "win32":
+        library_dir = _PASQAL_QDMI_DATA / "bin"
+        if library_dir.exists():
+            return library_dir
+        msg = f"Expected 'bin' directory for Pasqal QDMI library on Windows, but it does not exist: {library_dir}"
+        raise FileNotFoundError(msg)
+
+    library_dir = _PASQAL_QDMI_DATA / "lib"
+    if library_dir.exists():
+        return library_dir
+
+    library_dir = _PASQAL_QDMI_DATA / "lib64"
+    if library_dir.exists():
+        return library_dir
+
+    msg = (
+        "Expected 'lib' or 'lib64' directory for Pasqal QDMI library on Unix-like systems, "
+        f"but neither exists: {_PASQAL_QDMI_DATA}"
+    )
+    raise FileNotFoundError(msg)
+
+
+_PASQAL_QDMI_LIBRARY_DIR = _resolve_library_dir()
+_PASQAL_QDMI_CATALOG_NAME = "pasqal-qdmi-device.qdmi.json"
+
+# Ignore the adjacent QDMI catalogue when locating the native library.
+library_files = [
+    path for path in _PASQAL_QDMI_LIBRARY_DIR.glob("*pasqal-qdmi-device*") if path.name != _PASQAL_QDMI_CATALOG_NAME
+]
+if not library_files:
+    msg = f"No Pasqal QDMI library found in: {_PASQAL_QDMI_LIBRARY_DIR}"
+    raise FileNotFoundError(msg)
+PASQAL_QDMI_LIBRARY_PATH = min(library_files, key=lambda p: len(p.name))
+
+PASQAL_QDMI_CATALOG_PATH = _PASQAL_QDMI_LIBRARY_DIR / _PASQAL_QDMI_CATALOG_NAME
+if not PASQAL_QDMI_CATALOG_PATH.exists():
+    msg = f"PASQAL_QDMI_CATALOG_PATH does not exist: {PASQAL_QDMI_CATALOG_PATH}"
+    raise FileNotFoundError(msg)
+
+PASQAL_QDMI_INCLUDE_DIR = _PASQAL_QDMI_DATA / "include"
+if not PASQAL_QDMI_INCLUDE_DIR.exists():
+    msg = f"PASQAL_QDMI_INCLUDE_DIR does not exist: {PASQAL_QDMI_INCLUDE_DIR}"
+    raise FileNotFoundError(msg)
+
+PASQAL_QDMI_CMAKE_DIR = _PASQAL_QDMI_DATA / "share" / "cmake"
+if not PASQAL_QDMI_CMAKE_DIR.exists():
+    msg = f"PASQAL_QDMI_CMAKE_DIR does not exist: {PASQAL_QDMI_CMAKE_DIR}"
+    raise FileNotFoundError(msg)
+
+del dist, located_include_dir, resolved_include_dir

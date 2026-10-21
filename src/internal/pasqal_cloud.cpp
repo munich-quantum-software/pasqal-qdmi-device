@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2025 - 2026 Pasqal SAS
-// Copyright (c) 2025 - 2026 IBM, Pasqal
+// Copyright (c) 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -16,11 +15,6 @@
 // the License.
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-
-// Keep holder order and original years; excluded from license-tools' year
-// sorting. Adapted from QRMI's Pasqal client and API models, originally
-// Apache-2.0. Modified for this QDMI implementation. Upstream source:
-// https://github.com/qiskit-community/qrmi/tree/bbbfe872ea87ca435662ca26163b6fc913a3b4bb/dependencies/pasqal_cloud_client
 
 #include "pasqal-qdmi-device/Cloud.hpp"
 
@@ -248,15 +242,6 @@ json token_claims(std::string_view token) {
                  : json(json::value_t::discarded);
 }
 
-std::string normalize_auth_endpoint(const std::string& endpoint) {
-  if (endpoint.empty()) {
-    throw AuthError(
-        "auth endpoint must be configured when requesting an access token");
-  }
-  return endpoint.find("://") != std::string::npos ? endpoint
-                                                   : "https://" + endpoint;
-}
-
 long long now_unix_seconds() {
   return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::system_clock::now().time_since_epoch())
@@ -308,30 +293,10 @@ bool is_token_usable(const std::string& token, long long now) {
   if (!claims.contains("exp")) {
     return true;
   }
-  const auto& exp = claims["exp"];
-  long long expiry = 0;
-  if (exp.is_number_integer() &&
-      (!exp.is_number_unsigned() ||
-       exp.get<std::uint64_t>() <=
-           static_cast<std::uint64_t>(std::numeric_limits<long long>::max()))) {
-    expiry = exp.get<long long>();
-  } else if (exp.is_string()) {
-    try {
-      const auto text = exp.get<std::string>();
-      std::size_t consumed = 0;
-      expiry = std::stoll(text, &consumed);
-      if (consumed != text.size()) {
-        return false;
-      }
-    } catch (const std::exception&) {
-      return false;
-    }
-  } else {
-    return false;
-  }
-  return now <= std::numeric_limits<long long>::max() -
-                    TOKEN_EXPIRY_GRACE_SECONDS &&
-         expiry > now + TOKEN_EXPIRY_GRACE_SECONDS;
+  const auto& expiry = claims["exp"];
+  return expiry.is_number() && std::isfinite(expiry.get<double>()) &&
+         expiry.get<double>() - TOKEN_EXPIRY_GRACE_SECONDS >
+             static_cast<double>(now);
 }
 
 CloudClient::CloudClient(CloudConfig config) : config_(std::move(config)) {
@@ -342,7 +307,6 @@ CloudClient::CloudClient(CloudConfig config) : config_(std::move(config)) {
   while (config_.base_url.ends_with('/')) {
     config_.base_url.pop_back();
   }
-  config_.auth_endpoint = normalize_auth_endpoint(config_.auth_endpoint);
   validate_url(config_.auth_endpoint);
   config_.device_type = upper(config_.device_type);
   token_ = std::move(config_.token).value_or("");

@@ -83,5 +83,4 @@ for bug reports and feature requests.
 ## License
 
 The project is licensed under the Apache License 2.0 with LLVM exceptions; see
-[LICENSE](LICENSE). The Pasqal logo is used according to
-[Pasqal's brand guidelines](https://www.pasqal.com/legal/brand-guidelines/).
+[LICENSE](LICENSE).

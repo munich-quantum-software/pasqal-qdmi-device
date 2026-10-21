@@ -1,31 +1,46 @@
 # Maintenance
 
-Routine checks are deterministic and offline. CMake pins released native
+Routine tests and documentation examples run offline unless cloud credentials
+are explicitly supplied to the documentation build. CMake pins released native
 dependencies; `uv.lock` records the Python development environment. Shared MQT
 workflows are pinned to commits.
 
 ```console
-uvx nox -s lint tests docs
+uvx nox -s lint tests-3.14 docs
 uvx nox -s native
 cmake -P test/install.cmake
 uv build
 ```
 
-The native suite checks the QDMI contract and cloud transport against local HTTP
-fixtures. The install probe relocates the prefix and builds a fresh C consumer.
-Wheel tests exercise installed discovery, Core integration and result ordering,
-including comparison with the official SDK and an independent Pulser simulation.
-CI covers Linux, macOS and Windows, plus address/undefined-behavior sanitizers
-on Linux. Cloud credentials are not needed.
+The C++ suite checks the native QDMI contract. Pytest exercises cloud transport
+against local HTTP fixtures. The install probe relocates the prefix and builds a
+fresh C consumer. Wheel tests exercise installed discovery, Core integration and
+result ordering, including comparison with the official SDK and an independent
+Pulser simulation. CI covers Linux, macOS and Windows, plus
+address/undefined-behavior sanitizers on Linux. Cloud credentials are not
+needed.
 
 ## Documentation
 
-Build HTML with `uvx nox -s docs`. Sphinx treats warnings as errors, never
-executes cloud examples and does not import the native library. Inspect rendered
-pages with Chrome DevTools after layout changes.
+Build HTML with `uvx nox --non-interactive -s docs`. The session installs the
+provider, MQT Core and Pulser, then executes the MyST notebooks. Successful
+executions are cached; notebook failures and Sphinx warnings fail the build.
+Inspect rendered pages with Chrome DevTools after layout changes.
 
-When the repository becomes public, import `pasqal-qdmi-device` into Read the
-Docs using `.readthedocs.yaml`. No Pasqal credentials are required.
+Read the Docs uses Python 3.14 and the same Nox session. Import
+`pasqal-qdmi-device` with `.readthedocs.yaml`; no Pasqal credentials are needed
+for the offline examples. To execute [the free-emulator notebook](cloud.md), add
+`PASQAL_EMAIL`, `PASQAL_PASSWORD` and the full project UUID as
+`PASQAL_PROJECT_ID` in the project's
+[private environment variables](https://docs.readthedocs.com/platform/stable/environment-variables.html).
+Read the Docs withholds private variables from pull-request builds.
+
+The cloud example targets literal EMU_FREE, checks its unbilled emulator
+metadata and submits at most one two-atom, 20-shot job per execution. It prints
+the job ID before a bounded wait. Set `PASQAL_JOB_ID` to reuse that job after a
+failed or interrupted build. A clean notebook cache or changed code can trigger
+execution again; remove the credentials to keep a build offline. Do not retry a
+submission whose acceptance is unknown.
 
 ## Releases
 

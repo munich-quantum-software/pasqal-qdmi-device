@@ -19,6 +19,7 @@ has not been validated.
 installation
 authentication
 usage
+cloud
 capabilities
 troubleshooting
 maintenance

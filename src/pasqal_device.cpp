@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2025 - 2026 Pasqal SAS
+// Copyright (c) 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -146,23 +146,19 @@ void apply_authfile(PASQAL_QDMI_Device_Session_impl_d& session) {
     values[trim(line.substr(0, eq))] = trim(trim(line.substr(eq + 1)), "\"'");
   }
   const auto fill = [&values](std::optional<std::string>& field,
-                              const char* key, const char* alias = nullptr) {
+                              const char* key) {
     if (field) {
       return;
     }
     if (const auto it = values.find(key); it != values.end()) {
       field = it->second;
-    } else if (alias != nullptr) {
-      if (const auto alt = values.find(alias); alt != values.end()) {
-        field = alt->second;
-      }
     }
   };
   fill(session.username, "username");
   fill(session.password, "password");
   fill(session.token, "token");
   fill(session.project_id, "project_id");
-  fill(session.authurl, "auth_endpoint", "QRMI_PASQAL_CLOUD_AUTH_ENDPOINT");
+  fill(session.authurl, "auth_endpoint");
   fill(session.client_id, "client_id");
   fill(session.client_secret, "client_secret");
 }

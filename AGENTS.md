@@ -1,28 +1,49 @@
-# Repository guidance
+# Pasqal QDMI Device Agent Guide
 
-Read [docs/development.md](docs/development.md) for coding, testing, commit and
-AI contribution policy. Read [docs/capabilities.md](docs/capabilities.md) before
-changing a QDMI or Pasqal boundary; [docs/maintenance.md](docs/maintenance.md)
-contains validation and release commands.
+Read [the development policy](docs/development.md) for code, testing and
+contribution guidance. Read [capabilities](docs/capabilities.md) before changing
+a QDMI or Pasqal boundary. [Maintenance](docs/maintenance.md) owns build,
+release and documentation setup.
 
-- Preserve existing work and keep changes within the authorized task. Complete
-  reversible implementation and checks without routine confirmation questions.
-  Ask when a consequential requirement or external action lacks authorization.
-- Trace the producer, shared helper and consumer before changing a contract.
-  Reuse the standard library and existing dependencies. Prefer deletion and the
-  smallest complete fix over new abstractions.
-- Preserve validation, failure handling, ownership and deterministic ordering.
-  Never retry a cloud submission automatically.
-- Test observable contracts and regressions. Diagnose a failed check before
-  changing code or weakening an assertion. Stop repeating passing checks unless
-  a change or concrete concern justifies it.
-- Keep machine configuration, exploratory scripts and task reports outside the
-  tracked repository. Never print or commit credentials or authentication
-  responses. Cloud execution needs explicit authorization; ordinary CI is
-  offline.
-- Document current contracts, limitations and useful examples. Keep review
-  history and implementation plans out of product documentation.
-- Use gitmoji-led imperative commit subjects and signed commits. Preserve human
-  attribution; record AI assistance with `Assisted-by`, never `Co-authored-by`.
-- Report checks actually run, remaining limits and external setup separately.
-  Local checks do not establish hosted CI, publication or hardware validation.
+## Repository layout
+
+- `include/pasqal-qdmi-device/` and `src/` contain the C++ implementation and
+  Pasqal-specific constants; `cmake/` contains build support and the catalogue.
+- `python/pasqal/qdmi/` exposes installed package paths and Core discovery.
+- `test/` contains native tests, local HTTP fixtures and installed-package
+  tests.
+- `docs/` contains Sphinx documentation and executable MyST-NB examples.
+- Keep generated output in `build/` and `docs/_build/`, outside commits.
+
+## Working principles
+
+- Inspect the worktree first and preserve unrelated changes. Complete authorized
+  work and relevant checks without routine confirmation questions.
+- Trace producers, shared helpers and consumers before changing contracts. Reuse
+  C++20, existing dependencies and MQT Core's shared Python API.
+- Keep C++ exceptions inside the QDMI C boundary. Preserve validation,
+  ownership, result ordering and accepted job identifiers. Never retry a cloud
+  submission automatically.
+- Test observable behavior and concrete regressions. Diagnose failed checks
+  before changing code or weakening an assertion.
+- Use short sentences and established terms. Document the current design,
+  contracts and useful examples; keep review history out of product docs.
+- Use `///` for Doxygen and `//` for ordinary C++ comments. Follow configured
+  formatting, lint, typing and license-header checks.
+- Keep exploratory scripts, machine setup and task reports outside the checkout.
+  Never print or commit credentials or authentication responses.
+- Ordinary tests and documentation builds are offline. Supplying the documented
+  Pasqal secrets explicitly enables the bounded EMU_FREE notebook. Hardware
+  execution requires separate authorization.
+- Use signed, gitmoji-led commits. Preserve human attribution; record AI
+  assistance with `Assisted-by`, never `Co-authored-by`. Follow the development
+  policy for pull requests.
+- Separate local checks, hosted CI, publication and hardware validation in
+  reports.
+
+## Validation
+
+Run focused checks while developing and `uvx nox -s lint` before submission. Use
+`uvx nox -s tests-3.14` for one Python version, `uvx nox -s tests` for the
+supported matrix, `uvx nox -s native` for CTest, and
+`uvx nox --non-interactive -s docs` for executable documentation.

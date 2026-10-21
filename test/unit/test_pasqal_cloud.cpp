@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Munich Quantum Software Company GmbH
-// Copyright (c) 2025 - 2026 Pasqal SAS
+// Copyright (c) 2026 Pasqal SAS
 // All rights reserved.
 //
 // Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -22,7 +22,7 @@
 
 TEST(CloudValidation, RejectsCredentialUnsafeEndpoints) {
   for (const auto* url :
-       {"http://api.example.com", "file:///tmp/token",
+       {"http://api.example.com", "api.example.com", "", "file:///tmp/token",
         "https://user:password@example.com", "https://@example.com",
         "https://example.com/#fragment", "http://localhost.example.com",
         "http://127.0.0.1@example.com"}) {

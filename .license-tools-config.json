@@ -1,6 +1,6 @@
 {
   "author": {
-    "name": "Munich Quantum Software Company GmbH\nCopyright (c) 2025 - 2026 Pasqal SAS",
+    "name": "Munich Quantum Software Company GmbH\nCopyright (c) 2026 Pasqal SAS",
     "years": [2026]
   },
   "force_author": true,
@@ -29,7 +29,6 @@
     "py\\.typed",
     ".*build.*",
     "(^|/)LICENSE$",
-    "^src/internal/pasqal_cloud\\.cpp$",
     "^test/test_pasqal_device\\.cpp$"
   ]
 }

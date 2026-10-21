@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -26,16 +26,10 @@ list(APPEND PUBLIC_HEADER_FILES "${PROJECT_SOURCE_DIR}/include/pasqal-qdmi-devic
 add_subdirectory(internal)
 
 add_library(${QDMI_TARGET_NAME} SHARED)
-target_compile_features(${QDMI_TARGET_NAME} PRIVATE cxx_std_20)
 set_target_properties(
-  ${QDMI_TARGET_NAME}
-  PROPERTIES VERSION ${PROJECT_VERSION}
-             SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-             C_VISIBILITY_PRESET hidden
-             CXX_VISIBILITY_PRESET hidden
-             VISIBILITY_INLINES_HIDDEN 1)
-target_link_libraries(${QDMI_TARGET_NAME} PRIVATE qdmi::qdmi_project_warnings
-                                                  pasqal::qdmi_device_internals)
+  ${QDMI_TARGET_NAME} PROPERTIES VERSION ${PROJECT_VERSION}
+                                 SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+target_link_libraries(${QDMI_TARGET_NAME} PRIVATE pasqal::qdmi_device_internals)
 configure_qdmi_exports(TARGET ${QDMI_TARGET_NAME} INTERFACE device PREFIX ${QDMI_PREFIX})
 configure_qdmi_device_target(TARGET ${QDMI_TARGET_NAME} ID ${PASQAL_QDMI_DEVICE_ID} PREFIX
                              ${QDMI_PREFIX})
@@ -122,7 +116,8 @@ if(INSTALL_PASQAL_QDMI_DEVICE)
     find_file(
       OPENSSL_LICENSE
       NAMES LICENSE.txt copyright
-      PATHS /usr/share/licenses/openssl-libs /usr/share/doc/libssl-dev
+      PATHS /usr/share/licenses/openssl3-libs /usr/share/licenses/openssl-libs
+            /usr/share/doc/libssl-dev
       NO_DEFAULT_PATH REQUIRED)
     file(REAL_PATH "${OPENSSL_LICENSE}" OPENSSL_LICENSE_FILE)
     install(

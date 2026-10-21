@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -70,19 +70,4 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
                                           qdmi::qdmi_project_warnings)
   target_compile_features(${QDMI_TARGET_NAME}-unit-test PRIVATE cxx_std_20)
   gtest_discover_tests(${QDMI_TARGET_NAME}-unit-test DISCOVERY_TIMEOUT 60)
-endif()
-
-find_package(
-  Python3
-  COMPONENTS Interpreter
-  QUIET)
-if(Python3_Interpreter_FOUND)
-  foreach(suite pasqal_integration transport_http)
-    add_test(
-      NAME ${suite}
-      COMMAND
-        ${CMAKE_COMMAND} -E env "PASQAL_QDMI_LIBRARY=$<TARGET_FILE:${QDMI_TARGET_NAME}>"
-        "PASQAL_AUTHFILE=/nonexistent" "PYTHONDONTWRITEBYTECODE=1" ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/test_${suite}.py)
-  endforeach()
 endif()

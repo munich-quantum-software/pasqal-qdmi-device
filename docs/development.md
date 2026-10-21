@@ -54,10 +54,11 @@ checking its caller, invariant and history. Use independently derived
 expectations for ordering and sampled outcomes, with tolerances that make false
 failures unlikely.
 
-Routine CI uses local HTTP servers and needs no cloud credentials. Live EMU_FREE
-validation is explicit, bounded and separate. Keep one-off experiments, reports
-and machine setup local. Record performance claims only with representative
-measurements.
+Routine tests use local HTTP servers and need no cloud credentials. Executable
+examples belong in the MyST-NB documentation. The EMU_FREE notebook runs only
+when its documented credential environment variables are supplied. Keep one-off
+experiments, reports and machine setup local. Record performance claims only
+with representative measurements.
 
 ## Commits and contributions
 

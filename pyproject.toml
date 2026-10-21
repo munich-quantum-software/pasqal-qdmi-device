@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -61,8 +61,7 @@ email = "aleksander.wennersteen@pasqal.com"
 
 [project.optional-dependencies]
 core = [ "mqt-core>=4.1.1" ]
-pulser = [ "pulser-core>=1.9" ]
-cloud = [ "pasqal-cloud>=0.24" ]
+pulser = [ "pulser>=1.9.1" ]
 
 [project.urls]
 Homepage = "https://github.com/munich-quantum-software/pasqal-qdmi-device"
@@ -81,10 +80,7 @@ dev = [
 ]
 test = [
   "mqt-core>=4.1.1",
-  "numpy>=2.1",
-  "pasqal-cloud>=0.24",
-  "pulser-core>=1.9",
-  "pulser-simulation>=1.9",
+  "pulser>=1.9.1",
   "pytest>=9.1.1",
   "pytest-cov>=7.1",
   "pytest-sugar>=1.1.1",
@@ -92,7 +88,9 @@ test = [
 ]
 docs = [
   "furo>=2025.12.19",
-  "myst-parser>=4",
+  "mqt-core>=4.1.1",
+  "myst-nb>=1.4",
+  "pulser>=1.9.1",
   "sphinx>=9",
   "sphinx-copybutton>=0.5.2",
 ]
@@ -111,30 +109,34 @@ version = "CMakeLists.txt"
 
 [tool.scikit-build.cmake.define]
 BUILD_PASQAL_QDMI_TESTS = "OFF"
-INSTALL_PASQAL_QDMI_DEVICE = "ON"
-CMAKE_INSTALL_LIBDIR = "lib"
-
-[tool.scikit-build.ninja]
-make-fallback = true
 
 [tool.scikit-build.sdist]
-
+include = [ "python/pasqal/qdmi/_version.py" ]
 exclude = [
   "**/docs",
   "**/test",
   ".*",
-  "build*",
-  "dist",
 ]
 
 [tool.scikit-build.wheel]
 py-api = "py311"
-expand-macos-universal-tags = true
 packages = [ "python/pasqal" ]
 install-dir = "pasqal/qdmi/data"
 
 [tool.scikit-build.install]
 components = [ "pasqal-qdmi-device_Runtime", "pasqal-qdmi-device_Development" ]
+
+[[tool.scikit-build.generate]]
+path = "pasqal/qdmi/_version.py"
+template = '''
+version = "${version}"
+'''
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "darwin"
+cmake.define.CMAKE_IGNORE_PREFIX_PATH = "/opt/homebrew;/usr/local"
+cmake.define.CMAKE_DISABLE_FIND_PACKAGE_PkgConfig = "ON"
+cmake.define.CPR_USE_SYSTEM_CURL = "ON"
 
 
 [tool.uv]
@@ -142,9 +144,9 @@ cache-keys = [
   { file = "pyproject.toml" },
   { git = { commit = true, tags = true } },
   { file = "CMakeLists.txt" },
-  { file = "cmake/**" },
-  { file = "src/**" },
-  { file = "include/**" },
+  { file = "cmake/**/*" },
+  { file = "src/**/*" },
+  { file = "include/**/*" },
 ]
 
 [tool.uv.sources]
@@ -156,18 +158,16 @@ build = "cp3*"
 skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
-test-command = "python -I -m pytest test"
+test-command = "pytest test/python"
 test-groups = [ "test" ]
-test-sources = [ "test", "pyproject.toml" ]
+test-sources = [ "test/python" ]
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y openssl-devel"
-manylinux-x86_64-image = "manylinux_2_34"
-manylinux-aarch64-image = "manylinux_2_34"
+config-settings = { "cmake.define.CMAKE_PREFIX_PATH" = "/usr/include/openssl3;/usr/lib64/openssl3" }
+before-all = "yum install -y openssl3-devel"
 
 [tool.cibuildwheel.macos]
-config-settings = { "cmake.define.CPR_USE_SYSTEM_CURL" = "ON", "cmake.define.CURL_NO_CURL_CMAKE" = "ON", "cmake.define.CMAKE_DISABLE_FIND_PACKAGE_PkgConfig" = "ON", "cmake.define.CURL_CONFIG_EXECUTABLE" = "/usr/bin/curl-config" }
-environment = { MACOSX_DEPLOYMENT_TARGET = "13.3", CMAKE_ARGS = "-DCURL_INCLUDE_DIR=$(xcrun --show-sdk-path)/usr/include -DCURL_LIBRARY=$(xcrun --show-sdk-path)/usr/lib/libcurl.tbd" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "13.3" }
 
 [tool.cibuildwheel.windows]
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg pasqal"
@@ -184,12 +184,8 @@ show-fixes = true
 
 [tool.ruff.lint.per-file-ignores]
 "docs/**" = [ "INP001", "T20" ]
-"examples/**" = [ "INP001", "T20" ]
 "docs/conf.py" = [ "A001" ]
-"python/pasqal/qdmi/__init__.py" = [ "RUF067" ]
-# These suites also run through CTest with the Python standard library alone.
-"test/test_*.py" = [ "PT009", "PT027" ]
-"test/**" = [ "INP001", "T20" ]
+"test/python/**" = [ "INP001", "T20" ]
 
 [tool.ruff.lint.isort]
 known-first-party = [ "pasqal.qdmi" ]
@@ -238,19 +234,15 @@ exclude = [
   "docs/**",
 ]
 
-[tool.ty.environment]
-extra-paths = [ "test" ]
-
 [tool.ty.terminal]
 # Error if ty emits any warning-level diagnostics.
 error-on-warning = true
 
 
-[tool.pytest]
-addopts = [ "-ra" ]
+[tool.pytest.ini_options]
+minversion = "9.1"
+testpaths = [ "test/python" ]
+addopts = [ "-ra", "--numprocesses=auto" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
-minversion = "9.1"
-pythonpath = [ "test" ]
 strict = true
-testpaths = [ "test" ]

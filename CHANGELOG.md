@@ -12,14 +12,7 @@ releases may include breaking changes.
 
 ### Added
 
-- ✨ Implement QDMI 1.4 for native, measured Pulser sequences on Pasqal Cloud
-  ([**@awennersteen**], [**@burgholzer**]).
-- ✨ Support ordered batches, indexed counts, job retrieval and cancellation
-  ([**@burgholzer**]).
-- ✨ Discover cloud systems through a relocatable device catalogue, with
-  optional MQT Core integration ([**@burgholzer**]).
-- ✨ Authenticate with Pasqal accounts and refresh access tokens automatically
-  ([**@awennersteen**], [**@burgholzer**]).
+- 🎉 Initial commit ([**@awennersteen**], [**@burgholzer**]).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 [Common Changelog]: https://common-changelog.org/

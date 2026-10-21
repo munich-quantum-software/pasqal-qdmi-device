@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -28,11 +28,9 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import json
-import os
 import socket
 import threading
 import time
-import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -41,15 +39,12 @@ from urllib.parse import urlparse
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-ROOT = Path(__file__).resolve().parents[1]
-if "PASQAL_QDMI_LIBRARY" in os.environ:
-    LIBRARY = Path(os.environ["PASQAL_QDMI_LIBRARY"])
-else:
-    from pasqal.qdmi import PASQAL_QDMI_LIBRARY_PATH
+from pasqal.qdmi import PASQAL_QDMI_LIBRARY_PATH
 
-    LIBRARY = PASQAL_QDMI_LIBRARY_PATH
 CUSTOM1 = 999_999_995
-PROGRAMS = [(ROOT / "test/fixtures" / name).read_text().strip() for name in ("first-atom.json", "last-atom.json")]
+PROGRAMS = [
+    (Path(__file__).parent / "fixtures" / name).read_text().strip() for name in ("first-atom.json", "last-atom.json")
+]
 EXPECTED = [{"001": 7, "100": 2}, {"010": 9}]
 SPECS = json.dumps({"name": "UnrelatedQPU", "max_atom_num": 100, "channels": []})
 
@@ -59,7 +54,7 @@ class NativeAPI:
 
     def __init__(self) -> None:
         """Load the selected native library and configure its C ABI."""
-        self.library = ctypes.CDLL(str(LIBRARY))
+        self.library = ctypes.CDLL(str(PASQAL_QDMI_LIBRARY_PATH))
         lib = self.library
         handle, size, integer = ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int
         signatures = {
@@ -95,7 +90,7 @@ class NativeAPI:
 class CloudServer(ThreadingHTTPServer):
     """Attach the mutable fixture state to the local HTTP server."""
 
-    state: CloudCase
+    state: Cloud
 
 
 class CloudHandler(BaseHTTPRequestHandler):
@@ -200,11 +195,12 @@ class CloudHandler(BaseHTTPRequestHandler):
         self.reply({"data": {"status": "CANCELING"}})
 
 
-class CloudCase(unittest.TestCase):
+class Cloud:
     """Share a local cloud server and lifetime-safe C ABI helpers."""
 
-    def setUp(self) -> None:
+    def __init__(self, cleanup: contextlib.ExitStack) -> None:
         """Create independent metadata, counters and request records."""
+        self.cleanup = cleanup
         self.api = NativeAPI()
         self.job_ids = ["job-z", "job-a"]  # Neither lexical nor completion order.
         self.statuses = dict.fromkeys(self.job_ids, "DONE")
@@ -238,8 +234,8 @@ class CloudCase(unittest.TestCase):
         server.state = self
         self.base = f"http://127.0.0.1:{server.server_port}"
         threading.Thread(target=server.serve_forever, daemon=True).start()
-        self.addCleanup(server.server_close)
-        self.addCleanup(server.shutdown)
+        self.cleanup.callback(server.server_close)
+        self.cleanup.callback(server.shutdown)
 
     def session(
         self,
@@ -250,8 +246,8 @@ class CloudCase(unittest.TestCase):
     ) -> ctypes.c_void_p:
         """Return an initialized session that is freed at test teardown."""
         session = ctypes.c_void_p()
-        self.assertEqual(self.api.session_alloc(ctypes.byref(session)), 0)
-        self.addCleanup(self.api.session_free, session)
+        assert self.api.session_alloc(ctypes.byref(session)) == 0
+        self.cleanup.callback(self.api.session_free, session)
         params = [
             (0, self.base),
             (3, self.base + "/auth"),
@@ -264,36 +260,36 @@ class CloudCase(unittest.TestCase):
             params += [(4, "user"), (5, "password-SENTINEL")]
         for param, value in params:
             data = value.encode() + b"\0"
-            self.assertEqual(self.api.session_set_parameter(session, param, len(data), ctypes.c_char_p(data)), 0)
-        self.assertEqual(self.api.session_init(session), 0)
+            assert self.api.session_set_parameter(session, param, len(data), ctypes.c_char_p(data)) == 0
+        assert self.api.session_init(session) == 0
         return session
 
     def job(self, session: ctypes.c_void_p) -> ctypes.c_void_p:
         """Return a two-program job that is freed at test teardown."""
         job = ctypes.c_void_p()
-        self.assertEqual(self.api.session_create_device_job(session, ctypes.byref(job)), 0)
-        self.addCleanup(self.api.job_free, job)
+        assert self.api.session_create_device_job(session, ctypes.byref(job)) == 0
+        self.cleanup.callback(self.api.job_free, job)
         data = [p.encode() + b"\0" for p in PROGRAMS]
         sizes = (ctypes.c_size_t * len(data))(*(len(p) for p in data))
         pointers = (ctypes.c_void_p * len(data))(*(ctypes.cast(ctypes.c_char_p(p), ctypes.c_void_p) for p in data))
-        self.assertEqual(self.api.job_set_programs(job, CUSTOM1, len(data), sizes, pointers), 0)
+        assert self.api.job_set_programs(job, CUSTOM1, len(data), sizes, pointers) == 0
         shots = ctypes.c_size_t(9)
-        self.assertEqual(self.api.job_set_parameter(job, 2, ctypes.sizeof(shots), ctypes.byref(shots)), 0)
+        assert self.api.job_set_parameter(job, 2, ctypes.sizeof(shots), ctypes.byref(shots)) == 0
         return job
 
     def retrieve(self, session: ctypes.c_void_p, job_id: str) -> ctypes.c_void_p:
         """Return a retrieved job that is freed at test teardown."""
         job = ctypes.c_void_p()
-        self.assertEqual(self.api.session_retrieve_device_job_by_id(session, job_id.encode(), ctypes.byref(job)), 0)
-        self.addCleanup(self.api.job_free, job)
+        assert self.api.session_retrieve_device_job_by_id(session, job_id.encode(), ctypes.byref(job)) == 0
+        self.cleanup.callback(self.api.job_free, job)
         return job
 
     def job_id(self, job: ctypes.c_void_p) -> str:
         """Return the persisted identifier through the C buffer-sizing contract."""
         size = ctypes.c_size_t()
-        self.assertEqual(self.api.job_query_property(job, 0, 0, None, ctypes.byref(size)), 0)
+        assert self.api.job_query_property(job, 0, 0, None, ctypes.byref(size)) == 0
         data = ctypes.create_string_buffer(size.value)
-        self.assertEqual(self.api.job_query_property(job, 0, size.value, data, None), 0)
+        assert self.api.job_query_property(job, 0, size.value, data, None) == 0
         return data.value.decode()
 
     def status(self, job: ctypes.c_void_p, index: int | None = None) -> int:
@@ -304,191 +300,16 @@ class CloudCase(unittest.TestCase):
             if index is None
             else self.api.job_get_program_status(job, index, ctypes.byref(status))
         )
-        self.assertEqual(code, 0)
+        assert code == 0
         return status.value
 
     def counts(self, job: ctypes.c_void_p, index: int) -> dict[str, int]:
         """Return the paired histogram key and integer-count buffers."""
         size = ctypes.c_size_t()
-        self.assertEqual(self.api.job_get_results(job, index, 1, 0, None, ctypes.byref(size)), 0)
+        assert self.api.job_get_results(job, index, 1, 0, None, ctypes.byref(size)) == 0
         keys = ctypes.create_string_buffer(size.value)
-        self.assertEqual(self.api.job_get_results(job, index, 1, size.value, keys, None), 0)
+        assert self.api.job_get_results(job, index, 1, size.value, keys, None) == 0
         names = keys.value.decode().split(",")
         values = (ctypes.c_size_t * len(names))()
-        self.assertEqual(self.api.job_get_results(job, index, 2, ctypes.sizeof(values), values, None), 0)
+        assert self.api.job_get_results(job, index, 2, ctypes.sizeof(values), values, None) == 0
         return dict(zip(names, values, strict=True))
-
-
-class BoundaryTests(CloudCase):
-    """Verify native metadata, ordering, ownership and recovery contracts."""
-
-    def test_backend_is_resolved_from_cloud_metadata(self) -> None:
-        """Resolve the configured backend name before requesting metadata."""
-        self.device["device_type"] = "EMU_TN"
-        session = self.session(backend="emu_tn")
-        capacity = ctypes.c_size_t()
-        self.assertEqual(
-            self.api.session_query_device_property(session, 4, ctypes.sizeof(capacity), ctypes.byref(capacity), None),
-            0,
-        )
-        self.assertEqual(capacity.value, self.device["max_atom_num"])
-        self.assertIn(("GET", "/core-fast/api/v1/devices?device_type=EMU_TN", None), self.requests)
-
-    def test_capacity_is_backend_not_first_qpu(self) -> None:
-        """Read capacity from the selected backend and expose no invented sites."""
-        session = self.session()
-        capacity = ctypes.c_size_t()
-        self.assertEqual(
-            self.api.session_query_device_property(session, 4, ctypes.sizeof(capacity), ctypes.byref(capacity), None),
-            0,
-        )
-        self.assertEqual(capacity.value, 12)
-        for prop in (5, 6):
-            size = ctypes.c_size_t(99)
-            self.assertEqual(self.api.session_query_device_property(session, prop, 0, None, ctypes.byref(size)), 0)
-            self.assertEqual(size.value, 0)
-
-    def test_one_batch_preserves_order_and_fresh_retrieval(self) -> None:
-        """Preserve submission order across batching and fresh-session retrieval."""
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.assertEqual(len(self.submissions), 1)
-        self.assertEqual(self.submissions[0]["jobs"], [{"sequence": p, "runs": 9} for p in PROGRAMS])
-        self.assertIsNone(self.submissions[0]["sequence_builder"])
-        self.assertFalse(self.submissions[0]["open"])
-        self.assertEqual([self.counts(job, i) for i in range(2)], EXPECTED)
-        fresh = self.retrieve(self.session(), self.job_id(job))
-        self.assertEqual([self.counts(fresh, i) for i in range(2)], EXPECTED)
-        self.assertEqual(self.api.job_submit(fresh), -10)
-        self.assertEqual(len(self.submissions), 1)
-        downloads = [auth for _, path, auth in self.requests if path.startswith("/results/")]
-        self.assertTrue(downloads)
-        self.assertEqual(set(downloads), {None})
-
-    def test_accepted_batch_survives_followup_error(self) -> None:
-        """Retain an accepted batch ID when the first status read fails."""
-        job = self.job(self.session())
-        self.errors["/core-fast/api/v2/batches/batch-1"] = 503
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.assertIn("batch-1", self.job_id(job))
-        self.assertNotEqual(self.api.job_check(job, ctypes.byref(ctypes.c_int())), 0)
-        self.errors.clear()
-        self.assertEqual(self.status(job), 4)
-        self.assertEqual(len(self.submissions), 1)
-
-    def test_lost_submission_response_is_never_retried(self) -> None:
-        """Reject resubmission after an ambiguous connection loss."""
-        job = self.job(self.session())
-        self.drop_submission = True
-        self.assertNotEqual(self.api.job_submit(job), 0)
-        self.assertEqual(self.api.job_submit(job), -10)
-        self.assertEqual(len(self.submissions), 1)
-
-    def test_invalid_post_response_is_not_retried(self) -> None:
-        """Reject resubmission when the returned batch identifier is invalid."""
-        for response in ({}, {"id": ""}, {"id": "../invalid"}):
-            with self.subTest(response=response):
-                job = self.job(self.session())
-                self.submit_response = response
-                before = len(self.submissions)
-                self.assertNotEqual(self.api.job_submit(job), 0)
-                self.assertEqual(self.api.job_submit(job), -10)
-                self.assertEqual(len(self.submissions), before + 1)
-
-    def test_partial_batch_metadata_cannot_swap_or_omit_programs(self) -> None:
-        """Reject incomplete metadata instead of changing result association."""
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.job_ids = ["job-z"]
-        self.assertNotEqual(self.api.job_check(job, ctypes.byref(ctypes.c_int())), 0)
-
-    def test_successful_sibling_remains_accessible(self) -> None:
-        """Keep completed results available when another program fails."""
-        self.statuses["job-a"] = "ERROR"
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.assertEqual(self.status(job), 6)
-        self.assertEqual(self.counts(job, 0), EXPECTED[0])
-        self.assertEqual(self.api.job_get_results(job, 1, 1, 0, None, None), -10)
-
-    def test_malformed_counts_fail_and_can_be_refetched(self) -> None:
-        """Reject invalid histogram values without poisoning subsequent reads."""
-        for counter in (
-            {"100": -1},
-            {"100": 1.5},
-            {"100": True},
-            {"100": 2**64},
-            {"10": 9},
-            {"x00": 9},
-            {"100": 8},
-            {},
-            {"100": 9, "001": 1},
-        ):
-            with self.subTest(counter=counter):
-                self.counters["job-z"] = counter
-                job = self.job(self.session())
-                self.assertEqual(self.api.job_submit(job), 0)
-                self.assertNotEqual(self.api.job_get_results(job, 0, 1, 0, None, None), 0)
-                self.counters["job-z"] = {"100": 7, "001": 2}
-                self.assertEqual(self.counts(job, 0), EXPECTED[0])
-
-    def test_canceling_is_not_canceled_and_completion_can_win(self) -> None:
-        """Require cancellation confirmation and retain completed results."""
-        self.statuses = dict.fromkeys(self.job_ids, "RUNNING")
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.assertEqual(self.api.job_cancel(job), -1)
-        self.assertNotEqual(self.status(job), 5)
-        self.statuses = dict.fromkeys(self.job_ids, "DONE")
-        self.assertEqual(self.status(job), 4)
-        self.assertEqual(self.counts(job, 0), EXPECTED[0])
-
-    def test_deadline_bounds_slow_http(self) -> None:
-        """Apply the wait deadline to a delayed HTTP response."""
-        self.statuses = dict.fromkeys(self.job_ids, "RUNNING")
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.status_delay = 2
-        start = time.monotonic()
-        self.assertEqual(self.api.job_wait(job, 1), -11)
-        self.assertLess(time.monotonic() - start, 1.5)
-
-    def test_expired_bearer_refreshes_only_once(self) -> None:
-        """Refresh an expired bearer once without duplicating the submission."""
-        self.reject_bearer = True
-        job = self.job(self.session(credentials=True))
-        self.assertEqual(self.api.job_submit(job), 0)
-        self.assertEqual(self.status(job), 4)
-        self.assertEqual(self.auth_calls, 1)
-        self.assertEqual(len(self.submissions), 1)
-
-    def test_opaque_token_expiry_is_honored(self) -> None:
-        """Refresh opaque tokens when their declared lifetime elapses."""
-        self.expires_in = 1
-        job = self.job(self.session(token=None, credentials=True))
-        self.assertEqual(self.api.job_submit(job), 0)
-        before = self.auth_calls
-        time.sleep(1.05)
-        self.assertEqual(self.status(job), 4)
-        self.assertGreater(self.auth_calls, before)
-
-    def test_queue_length_sums_jobs_not_shots(self) -> None:
-        """Sum waiting jobs across provider queue categories."""
-        session = self.session()
-        count = ctypes.c_size_t()
-        self.assertEqual(
-            self.api.session_query_device_property(session, 17, ctypes.sizeof(count), ctypes.byref(count), None),
-            0,
-        )
-        self.assertEqual(count.value, 5)
-
-    def test_unsupported_results_do_not_fabricate_shots(self) -> None:
-        """Reject unavailable chronological samples and probability results."""
-        job = self.job(self.session())
-        self.assertEqual(self.api.job_submit(job), 0)
-        for result in (0, 3, 4):
-            self.assertEqual(self.api.job_get_results(job, 0, result, 0, None, None), -9)
-
-
-if __name__ == "__main__":
-    unittest.main()

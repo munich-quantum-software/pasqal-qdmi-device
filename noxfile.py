@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script --quiet
 # Copyright (c) 2026 Munich Quantum Software Company GmbH
-# Copyright (c) 2025 - 2026 Pasqal SAS
+# Copyright (c) 2026 Pasqal SAS
 # All rights reserved.
 #
 # Licensed under the Apache License v2.0 with LLVM Exceptions (the "License");
@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import sys
 from pathlib import Path
 
 import nox
@@ -70,12 +69,9 @@ def native(session: nox.Session) -> None:
     parser.add_argument("--sanitizers", action="store_true")
     args, cmake_args = parser.parse_known_args(session.posargs)
     build_dir = Path("build") / ("sanitizers" if args.sanitizers else "native")
-    ctest_args = []
     if args.sanitizers:
         flags = "-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all"
         cmake_args.extend([f"-DCMAKE_C_FLAGS={flags}", f"-DCMAKE_CXX_FLAGS={flags}"])
-        # An ordinary Python interpreter cannot load an ASan-instrumented library.
-        ctest_args.extend(["--exclude-regex", "^(pasqal_integration|transport_http)$"])
     session.run(
         "cmake",
         "-S",
@@ -83,7 +79,6 @@ def native(session: nox.Session) -> None:
         "-B",
         str(build_dir),
         f"-DCMAKE_BUILD_TYPE={args.config}",
-        f"-DPython3_EXECUTABLE={sys.executable}",
         *cmake_args,
     )
     session.run("cmake", "--build", str(build_dir), "--config", args.config, "--parallel", "2")
@@ -96,13 +91,12 @@ def native(session: nox.Session) -> None:
         "--output-on-failure",
         "--timeout",
         "600",
-        *ctest_args,
     )
 
 
 @nox.session(python="3.14", reuse_venv=True, default=True)
 def docs(session: nox.Session) -> None:
-    """Build documentation without installing the device or executing examples."""
+    """Build documentation and execute its notebook examples."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", dest="builder", default="html", help="Sphinx builder")
     args, posargs = parser.parse_known_args(session.posargs)
@@ -110,7 +104,8 @@ def docs(session: nox.Session) -> None:
         "uv",
         "run",
         "--locked",
-        "--only-group",
+        "--no-dev",
+        "--group",
         "docs",
         "sphinx-build",
         "-n",
