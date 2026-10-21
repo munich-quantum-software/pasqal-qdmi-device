@@ -19,9 +19,13 @@ jobs:
       fail-fast: false
       matrix:
         runs-on: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-2025]
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@6c933678406ab1887a137839dfd0e290f12917da # v2.5.2
+    uses: $/.github/workflows/wheels.yml
     with:
       runs-on: ${{ matrix.runs-on }}
+    secrets:
+      PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+      PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+      PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
     permissions:
       contents: read
 

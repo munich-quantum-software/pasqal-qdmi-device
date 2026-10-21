@@ -1,9 +1,9 @@
 # Maintenance
 
-Routine tests and documentation examples run offline unless cloud credentials
-are explicitly supplied to the documentation build. CMake pins released native
-dependencies; `uv.lock` records the Python development environment. Shared MQT
-workflows are pinned to commits.
+Ordinary tests and executable documentation use Pasqal's free EMU_FREE service.
+CMake pins released native dependencies; `uv.lock` records the Python
+development environment. Configure the credentials below before running the full
+checks:
 
 ```console
 uvx nox -s lint tests-3.14 docs
@@ -12,35 +12,57 @@ cmake -P test/install.cmake
 uv build
 ```
 
-The C++ suite checks the native QDMI contract. Pytest exercises cloud transport
-against local HTTP fixtures. The install probe relocates the prefix and builds a
-fresh C consumer. Wheel tests exercise installed discovery, Core integration and
-result ordering, including comparison with the official SDK and an independent
-Pulser simulation. CI covers Linux, macOS and Windows, plus
-address/undefined-behavior sanitizers on Linux. Cloud credentials are not
-needed.
+C++ conformance tests query live metadata. Python tests submit one batch of two
+three-atom, 100-shot programs per interpreter/platform, then verify retrieval,
+result ordering and parity with the official SDK. Local HTTP fixtures cover
+failures that cannot be produced reliably against the service. Missing
+credentials or failed cloud execution fail the normal Python suite.
+
+CI covers Linux, macOS and Windows, including installed wheels, relocated native
+consumers and Linux sanitizers. Fork pull requests run the Python tests without
+the `integration` marker and omit credentialed documentation builds; upstream
+credentials are never exposed to fork code. Normal trusted CI runs every test.
+To select only local checks during development, use
+`pytest -m "not integration"` and
+`ctest --test-dir build/native -LE integration`.
+
+## Credentials
+
+Set the same three values in each environment:
+
+| Name                | Value                                        |
+| ------------------- | -------------------------------------------- |
+| `PASQAL_EMAIL`      | Pasqal Cloud account email                   |
+| `PASQAL_PASSWORD`   | Account password                             |
+| `PASQAL_PROJECT_ID` | Full project UUID, not an abbreviated prefix |
+
+- **GitHub:** repository
+  **Settings → Secrets and variables → Actions → New repository secret**. CI and
+  release wheel tests forward these three secrets.
+- **Read the Docs:** project **Admin → Environment Variables**, with
+  **Public unchecked**. GitHub secrets are not inherited by RtD.
+- **Local development:** export the same variables securely. Applications can
+  also use the protected auth file described in
+  [authentication](authentication.md).
+
+The account must have access to the project and EMU_FREE. No copied access
+token, client secret or saved job ID is required. Other cloud emulators may
+consume credits and are not used by the test suite.
 
 ## Documentation
 
-Build HTML with `uvx nox --non-interactive -s docs`. The session installs the
-provider, MQT Core and Pulser, then executes the MyST notebooks. Successful
-executions are cached; notebook failures and Sphinx warnings fail the build.
-Inspect rendered pages with Chrome DevTools after layout changes.
+Build HTML with `uvx nox --non-interactive -s docs`. It installs the provider,
+MQT Core and Pulser and executes the end-to-end example. Successful notebook
+executions are cached, as in the peer devices; errors and Sphinx warnings fail
+the build. Clear `docs/_build/.jupyter_cache` to force execution after changing
+credentials. A fresh execution submits one small EMU_FREE batch.
 
-Read the Docs uses Python 3.14 and the same Nox session. Import
-`pasqal-qdmi-device` with `.readthedocs.yaml`; no Pasqal credentials are needed
-for the offline examples. To execute [the free-emulator notebook](cloud.md), add
-`PASQAL_EMAIL`, `PASQAL_PASSWORD` and the full project UUID as
-`PASQAL_PROJECT_ID` in the project's
-[private environment variables](https://docs.readthedocs.com/platform/stable/environment-variables.html).
-Read the Docs withholds private variables from pull-request builds.
-
-The cloud example targets literal EMU_FREE, checks its unbilled emulator
-metadata and submits at most one two-atom, 20-shot job per execution. It prints
-the job ID before a bounded wait. Set `PASQAL_JOB_ID` to reuse that job after a
-failed or interrupted build. A clean notebook cache or changed code can trigger
-execution again; remove the credentials to keep a build offline. Do not retry a
-submission whose acceptance is unknown.
+Import the project into Read the Docs with `.readthedocs.yaml`, add the three
+private environment variables, and build the default branch. RtD uses Python
+3.14 and the same Nox command. Leave RtD pull-request previews disabled: private
+variables are unavailable to those builds. Trusted GitHub CI builds the actual
+notebooks for same-repository pull requests. Inspect rendered pages with Chrome
+DevTools after layout changes.
 
 ## Releases
 

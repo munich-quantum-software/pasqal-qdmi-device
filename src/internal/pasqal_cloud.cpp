@@ -174,6 +174,8 @@ void configure(cpr::Session& session, const std::string& url,
     timeout = std::min(timeout, remaining);
   }
   session.SetUrl(cpr::Url{url});
+  // Avoid CVE-2026-92392 with system curl as well as the bundled build.
+  session.SetHttpVersion(cpr::HttpVersion{cpr::HttpVersionCode::VERSION_1_1});
   session.SetRedirect(cpr::Redirect{false});
   session.SetTimeout(cpr::Timeout{timeout});
   session.SetConnectTimeout(cpr::ConnectTimeout{

@@ -45,10 +45,11 @@ PASQAL_QDMI_Device_Session session_with(
   return session;
 }
 
-PASQAL_QDMI_Device_Session mock_session() {
-  auto* session =
-      session_with({{QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "MOCK"}});
-  EXPECT_EQ(PASQAL_QDMI_device_session_init(session), QDMI_SUCCESS);
+PASQAL_QDMI_Device_Session initialized_session() {
+  // Seed private state for tests that do not exercise cloud initialization.
+  auto* session = session_with({});
+  session->initialized = true;
+  session->specs.qubits_num = 4;
   return session;
 }
 
@@ -81,7 +82,7 @@ protected:
   PASQAL_QDMI_Device_Job job = nullptr;
 
   void SetUp() override {
-    session = mock_session();
+    session = initialized_session();
     ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
               QDMI_SUCCESS);
   }
@@ -113,7 +114,7 @@ TEST(Session, AllocRejectsNull) {
 
 TEST(Session, NullValueProbesWithoutClearing) {
   auto* session =
-      session_with({{QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "MOCK"}});
+      session_with({{QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "EMU_FREE"}});
   const auto probe = [session](QDMI_Device_Session_Parameter param) {
     return PASQAL_QDMI_device_session_set_parameter(session, param, 0, nullptr);
   };
@@ -123,7 +124,7 @@ TEST(Session, NullValueProbesWithoutClearing) {
             QDMI_ERROR_NOTSUPPORTED);
   EXPECT_EQ(probe(QDMI_DEVICE_SESSION_PARAMETER_CUSTOM2),
             QDMI_ERROR_NOTSUPPORTED);
-  EXPECT_TRUE(session->is_mock());
+  EXPECT_EQ(session->backend_name(), "EMU_FREE");
   PASQAL_QDMI_device_session_free(session);
 }
 
@@ -140,8 +141,19 @@ TEST(Session, BackendIdentifiersAreValidatedWithoutAnAllowlist) {
   PASQAL_QDMI_device_session_free(session);
 }
 
+TEST(Session, EveryBackendUsesCloudValidation) {
+  auto* session = session_with(
+      {{QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "MOCK"},
+       {QDMI_DEVICE_SESSION_PARAMETER_BASEURL, "file:///invalid"}});
+  session->authfile.reset();
+  EXPECT_EQ(PASQAL_QDMI_device_session_init(session), QDMI_ERROR_FATAL);
+  EXPECT_FALSE(session->initialized);
+  EXPECT_EQ(session->cloud, nullptr);
+  PASQAL_QDMI_device_session_free(session);
+}
+
 TEST(Session, SecondInitAndLateParametersAreBadState) {
-  auto* session = mock_session();
+  auto* session = initialized_session();
   EXPECT_EQ(PASQAL_QDMI_device_session_init(session), QDMI_ERROR_BADSTATE);
   EXPECT_EQ(set_str(session, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1, "EMU_FREE"),
             QDMI_ERROR_BADSTATE);
@@ -149,7 +161,7 @@ TEST(Session, SecondInitAndLateParametersAreBadState) {
 }
 
 TEST(Job, ShotsBeyondCloudRangeAreRejected) {
-  auto* session = mock_session();
+  auto* session = initialized_session();
   PASQAL_QDMI_Device_Job job = nullptr;
   ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
             QDMI_SUCCESS);
@@ -160,58 +172,20 @@ TEST(Job, ShotsBeyondCloudRangeAreRejected) {
   PASQAL_QDMI_device_session_free(session);
 }
 
-TEST(Job, MockLifecycleReturnsHistogram) {
-  auto* session = mock_session();
-  PASQAL_QDMI_Device_Job job = nullptr;
-  ASSERT_EQ(PASQAL_QDMI_device_session_create_device_job(session, &job),
-            QDMI_SUCCESS);
+TEST_F(ProgramListTest, UnsubmittedJobsRejectWaitAndResults) {
   EXPECT_EQ(PASQAL_QDMI_device_job_wait(job, 0), QDMI_ERROR_INVALIDARGUMENT);
-  EXPECT_EQ(PASQAL_QDMI_device_job_submit(job),
-            QDMI_ERROR_BADSTATE); // no program yet
-  const auto format = QDMI_PROGRAM_FORMAT_QASM3;
-  EXPECT_EQ(
-      PASQAL_QDMI_device_job_set_programs(job, format, 1, nullptr, nullptr),
-      QDMI_ERROR_NOTSUPPORTED);
-  const std::string program = TWO_ATOMS;
-  const size_t program_size = program.size() + 1;
-  const void* program_data = program.c_str();
-  ASSERT_EQ(PASQAL_QDMI_device_job_set_programs(job,
-                                                QDMI_PROGRAM_FORMAT_CUSTOM1, 1,
-                                                &program_size, &program_data),
-            QDMI_SUCCESS);
-  ASSERT_EQ(set_shots(job, 50), QDMI_SUCCESS);
-  size_t size = 0;
-  EXPECT_EQ(PASQAL_QDMI_device_job_get_results(
-                job, 0, QDMI_JOB_RESULT_HIST_KEYS, 0, nullptr, &size),
-            QDMI_ERROR_BADSTATE); // not finished
-  ASSERT_EQ(PASQAL_QDMI_device_job_submit(job), QDMI_SUCCESS);
   EXPECT_EQ(PASQAL_QDMI_device_job_submit(job), QDMI_ERROR_BADSTATE);
-  ASSERT_EQ(PASQAL_QDMI_device_job_wait(job, 0), QDMI_SUCCESS);
-  EXPECT_EQ(PASQAL_QDMI_device_job_wait(job, 1), QDMI_SUCCESS);
-  EXPECT_EQ(
-      PASQAL_QDMI_device_job_wait(job, std::numeric_limits<size_t>::max()),
-      QDMI_SUCCESS);
-  ASSERT_EQ(PASQAL_QDMI_device_job_get_results(
-                job, 0, QDMI_JOB_RESULT_HIST_KEYS, 0, nullptr, &size),
-            QDMI_SUCCESS);
-  std::string keys(size, '\0');
-  ASSERT_EQ(PASQAL_QDMI_device_job_get_results(
-                job, 0, QDMI_JOB_RESULT_HIST_KEYS, size, keys.data(), nullptr),
-            QDMI_SUCCESS);
-  EXPECT_STREQ(keys.c_str(), "00");
-  size_t count = 0;
-  ASSERT_EQ(PASQAL_QDMI_device_job_get_results(job, 0,
-                                               QDMI_JOB_RESULT_HIST_VALUES,
-                                               sizeof(count), &count, nullptr),
-            QDMI_SUCCESS);
-  EXPECT_EQ(count, 50);
-  EXPECT_EQ(PASQAL_QDMI_device_job_cancel(job), QDMI_ERROR_INVALIDARGUMENT);
-  PASQAL_QDMI_device_job_free(job);
-  PASQAL_QDMI_device_session_free(session);
+  EXPECT_EQ(PASQAL_QDMI_device_job_set_programs(job, QDMI_PROGRAM_FORMAT_QASM3,
+                                                1, nullptr, nullptr),
+            QDMI_ERROR_NOTSUPPORTED);
+  ASSERT_EQ(set_programs(job, {TWO_ATOMS}), QDMI_SUCCESS);
+  EXPECT_EQ(PASQAL_QDMI_device_job_get_results(
+                job, 0, QDMI_JOB_RESULT_HIST_KEYS, 0, nullptr, nullptr),
+            QDMI_ERROR_BADSTATE);
 }
 
 TEST(Session, ReportsStableDeviceId) {
-  auto* session = mock_session();
+  auto* session = initialized_session();
   size_t size = 0;
   ASSERT_EQ(PASQAL_QDMI_device_session_query_device_property(
                 session, QDMI_DEVICE_PROPERTY_ID, 0, nullptr, &size),
@@ -226,7 +200,7 @@ TEST(Session, ReportsStableDeviceId) {
 }
 
 TEST(Session, NativePulserHasNoFabricatedTopology) {
-  auto* session = mock_session();
+  auto* session = initialized_session();
   for (const auto property :
        {QDMI_DEVICE_PROPERTY_SITES, QDMI_DEVICE_PROPERTY_OPERATIONS}) {
     size_t size = 99;
@@ -378,8 +352,18 @@ TEST_F(ProgramListTest, RejectsInvalidTextAndRemovedParameters) {
 
 TEST_F(ProgramListTest, ReturnsIndexedResultsAndStatuses) {
   ASSERT_EQ(set_programs(job, {ONE_ATOM, TWO_ATOMS}), QDMI_SUCCESS);
-  ASSERT_EQ(set_shots(job, 7), QDMI_SUCCESS);
-  ASSERT_EQ(PASQAL_QDMI_device_job_submit(job), QDMI_SUCCESS);
+  job->submission_attempted = true;
+  job->status = QDMI_JOB_STATUS_DONE;
+  job->programs[0].status = QDMI_JOB_STATUS_DONE;
+  job->programs[0].results = pasqal::Histogram{"1", {7}};
+  job->programs[1].status = QDMI_JOB_STATUS_DONE;
+  job->programs[1].results = pasqal::Histogram{"10", {3}};
+  for (const auto timeout :
+       {size_t{0}, size_t{1}, std::numeric_limits<size_t>::max()}) {
+    EXPECT_EQ(PASQAL_QDMI_device_job_wait(job, timeout), QDMI_SUCCESS);
+  }
+  EXPECT_EQ(PASQAL_QDMI_device_job_submit(job), QDMI_ERROR_BADSTATE);
+  EXPECT_EQ(PASQAL_QDMI_device_job_cancel(job), QDMI_ERROR_INVALIDARGUMENT);
   for (size_t index = 0; index < 2; ++index) {
     QDMI_Job_Status status{};
     EXPECT_EQ(PASQAL_QDMI_device_job_get_program_status(job, index, &status),
@@ -390,13 +374,13 @@ TEST_F(ProgramListTest, ReturnsIndexedResultsAndStatuses) {
                                                  QDMI_JOB_RESULT_HIST_KEYS,
                                                  sizeof(keys), keys, nullptr),
               QDMI_SUCCESS);
-    EXPECT_EQ(std::string(keys), std::string(index + 1, '0'));
+    EXPECT_EQ(std::string(keys), index == 0 ? "1" : "10");
     size_t count = 0;
     EXPECT_EQ(PASQAL_QDMI_device_job_get_results(
                   job, index, QDMI_JOB_RESULT_HIST_VALUES, sizeof(count),
                   &count, nullptr),
               QDMI_SUCCESS);
-    EXPECT_EQ(count, 7U);
+    EXPECT_EQ(count, index == 0 ? 7U : 3U);
   }
   QDMI_Job_Status status{};
   EXPECT_EQ(PASQAL_QDMI_device_job_get_program_status(job, 2, &status),
@@ -446,7 +430,8 @@ TEST_F(ProgramListTest, BufferSizesAndFailureOutputsAreBounded) {
       QDMI_SUCCESS);
   EXPECT_EQ(buffer[size - 1], '\0');
   EXPECT_EQ(buffer[size], '#');
-  ASSERT_EQ(PASQAL_QDMI_device_job_submit(job), QDMI_SUCCESS);
+  job->programs[0].status = QDMI_JOB_STATUS_DONE;
+  job->programs[0].results = pasqal::Histogram{"10", {7}};
   size_t count = 42;
   EXPECT_EQ(
       PASQAL_QDMI_device_job_get_results(job, 0, QDMI_JOB_RESULT_HIST_VALUES,

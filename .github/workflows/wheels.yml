@@ -1,0 +1,50 @@
+name: 🐍 • Packaging
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: The runner image to build and test on
+        type: string
+        required: true
+    secrets:
+      PASQAL_EMAIL:
+        required: false
+      PASQAL_PASSWORD:
+        required: false
+      PASQAL_PROJECT_ID:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheel:
+    name: 🎡 ${{ inputs.runs-on }}
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: ${{ !startsWith(inputs.runs-on, 'ubuntu') }}
+          save-cache: ${{ github.ref == 'refs/heads/main' }}
+      - uses: pypa/cibuildwheel@b3395e271a35f73dad77f21802abe9b986dfe299 # v4.3.1
+        env:
+          PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+          PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+          PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
+          # Forks cannot receive credentials; trusted runs execute every test.
+          CIBW_TEST_COMMAND: >-
+            pytest test/python
+            ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.id != github.event.pull_request.base.repo.id && '-m "not integration"' || '' }}
+      - name: Verify clean directory
+        run: git diff --exit-code
+        shell: bash
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ github.event_name == 'pull_request' && 'dev-' || '' }}cibw-wheels-${{ inputs.runs-on }}
+          path: wheelhouse/*.whl

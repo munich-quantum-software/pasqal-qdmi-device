@@ -16,9 +16,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Sphinx documentation with offline and credential-enabled MyST notebooks."""
+"""Sphinx documentation with executable Pasqal Cloud examples."""
 
-import os
 import tomllib
 from pathlib import Path
 
@@ -46,8 +45,3 @@ myst_heading_anchors = 3
 nb_execution_mode = "cache"
 nb_execution_raise_on_error = True
 nb_execution_timeout = 360
-nb_execution_excludepatterns = (
-    []
-    if all(os.environ.get(name) for name in ("PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID"))
-    else ["cloud.md"]
-)

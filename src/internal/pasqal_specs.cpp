@@ -49,12 +49,4 @@ DeviceSpecs DeviceSpecs::from_metadata(const std::string& name,
   return specs;
 }
 
-DeviceSpecs DeviceSpecs::mock() {
-  DeviceSpecs specs;
-  specs.name = "Pasqal offline all-zero transport fixture";
-  specs.status = QDMI_DEVICE_STATUS_IDLE;
-  specs.qubits_num = 4;
-  return specs;
-}
-
 } // namespace pasqal

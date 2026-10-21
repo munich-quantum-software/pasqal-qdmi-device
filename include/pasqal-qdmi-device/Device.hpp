@@ -34,8 +34,6 @@
 
 namespace pasqal {
 
-/// Backend name that selects the offline mock instead of Pasqal Cloud.
-inline constexpr std::string_view MOCK_BACKEND = "MOCK";
 /// Backend used when neither `PASQAL_QDMI_BACKEND` nor the backend parameter is
 /// set.
 inline constexpr std::string_view DEFAULT_BACKEND = "EMU_FREE";
@@ -82,7 +80,6 @@ struct PASQAL_QDMI_Device_Session_impl_d {
 
   PASQAL_QDMI_Device_Session_impl_d();
   [[nodiscard]] std::string backend_name() const;
-  [[nodiscard]] bool is_mock() const;
 };
 
 /// Raw C callers must free jobs before their session; Core retains it

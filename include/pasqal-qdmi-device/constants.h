@@ -22,9 +22,8 @@
 
 #include "pasqal_qdmi/constants.h" // IWYU pragma: export
 
-/// NUL-terminated UTF-8 session backend, copied and fixed at init: "EMU_FREE",
-/// "EMU_MPS", "EMU_FRESNEL", "FRESNEL", "FRESNEL_CAN1" or "MOCK". Defaults to
-/// $PASQAL_QDMI_BACKEND, then "EMU_FREE".
+/// NUL-terminated UTF-8 cloud backend identifier, copied and fixed at init.
+/// Defaults to $PASQAL_QDMI_BACKEND, then "EMU_FREE".
 #define PASQAL_QDMI_DEVICE_SESSION_PARAMETER_BACKEND                           \
   QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1
 
@@ -36,7 +35,6 @@
 /// {"device_type", "specs"}, copied from Pasqal as a session snapshot. These
 /// are candidate device models, not an exhaustive list of emulator-compatible
 /// sequences: emulators can also accept Pulser VirtualDevice models.
-/// Not supported for the offline mock fixture.
 #define PASQAL_QDMI_DEVICE_PROPERTY_PULSERSPECS QDMI_DEVICE_PROPERTY_CUSTOM1
 
 /// NUL-terminated UTF-8 JSON for a built, measured Pulser abstract sequence.

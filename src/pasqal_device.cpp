@@ -22,8 +22,6 @@
 #include "pasqal_qdmi/device.h"
 
 #include <algorithm>
-#include <atomic>
-#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -45,13 +43,6 @@ constexpr std::string_view BATCH_PREFIX = "pasqal-batch:";
 constexpr int MAX_WAIT_FAILURES = 5;
 /// Upper bound of the exponential polling delay in `job_wait`.
 constexpr std::chrono::seconds MAX_WAIT_DELAY{30};
-
-bool iequals(std::string_view a, std::string_view b) {
-  return std::equal(a.begin(), a.end(), b.begin(), b.end(),
-                    [](unsigned char x, unsigned char y) {
-                      return std::tolower(x) == std::tolower(y);
-                    });
-}
 
 int copy_data(const void* source, size_t bytes, size_t size, void* out,
               size_t* size_ret) {
@@ -279,7 +270,7 @@ void refresh_mapping(PASQAL_QDMI_Device_Job job, pasqal::Deadline deadline) {
 void refresh_program(PASQAL_QDMI_Device_Job job, pasqal::Program& program,
                      pasqal::Deadline deadline) {
   if (program.status == QDMI_JOB_STATUS_CREATED ||
-      is_terminal(program.status) || !job->session->cloud) {
+      is_terminal(program.status)) {
     return;
   }
   const auto metadata = job->session->cloud->job(program.id, deadline);
@@ -435,6 +426,15 @@ int pasqal::current_exception_status() {
 
 PASQAL_QDMI_Device_Session_impl_d::PASQAL_QDMI_Device_Session_impl_d()
     : authfile(default_authfile()) {
+  const auto from_env = [](const char* name) -> std::optional<std::string> {
+    const auto* value = std::getenv(name);
+    return value != nullptr && *value != '\0'
+               ? std::optional<std::string>{value}
+               : std::nullopt;
+  };
+  username = from_env("PASQAL_EMAIL");
+  password = from_env("PASQAL_PASSWORD");
+  project_id = from_env("PASQAL_PROJECT_ID");
   if (const auto* backend_env = std::getenv("PASQAL_QDMI_BACKEND");
       backend_env != nullptr) {
     backend = backend_env;
@@ -443,10 +443,6 @@ PASQAL_QDMI_Device_Session_impl_d::PASQAL_QDMI_Device_Session_impl_d()
 
 std::string PASQAL_QDMI_Device_Session_impl_d::backend_name() const {
   return backend.value_or(std::string(pasqal::DEFAULT_BACKEND));
-}
-
-bool PASQAL_QDMI_Device_Session_impl_d::is_mock() const {
-  return iequals(backend_name(), pasqal::MOCK_BACKEND);
 }
 
 int PASQAL_QDMI_device_initialize() { return QDMI_SUCCESS; }
@@ -529,29 +525,25 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
   return guarded([session]() -> int {
     apply_authfile(*session);
     const auto backend = session->backend_name();
-    if (session->is_mock()) {
-      session->specs = pasqal::DeviceSpecs::mock();
-    } else {
-      pasqal::CloudConfig config{.device_type = backend,
-                                 .project_id = session->project_id.value_or(""),
-                                 .token = session->token,
-                                 .username = session->username,
-                                 .password = session->password,
-                                 .client_id = session->client_id,
-                                 .client_secret = session->client_secret};
-      if (session->base_url) {
-        config.base_url = *session->base_url;
-      }
-      if (session->authurl) {
-        config.auth_endpoint = *session->authurl;
-      }
-      auto cloud = std::make_unique<pasqal::CloudClient>(std::move(config));
-      session->specs =
-          pasqal::DeviceSpecs::from_metadata(backend, cloud->device_metadata());
-      session->specs.pulser_specs =
-          cloud->device_spec_entries(session->specs.is_emulator);
-      session->cloud = std::move(cloud);
+    pasqal::CloudConfig config{.device_type = backend,
+                               .project_id = session->project_id.value_or(""),
+                               .token = session->token,
+                               .username = session->username,
+                               .password = session->password,
+                               .client_id = session->client_id,
+                               .client_secret = session->client_secret};
+    if (session->base_url) {
+      config.base_url = *session->base_url;
     }
+    if (session->authurl) {
+      config.auth_endpoint = *session->authurl;
+    }
+    auto cloud = std::make_unique<pasqal::CloudClient>(std::move(config));
+    session->specs =
+        pasqal::DeviceSpecs::from_metadata(backend, cloud->device_metadata());
+    session->specs.pulser_specs =
+        cloud->device_spec_entries(session->specs.is_emulator);
+    session->cloud = std::move(cloud);
     session->initialized = true;
     return QDMI_SUCCESS;
   });
@@ -590,9 +582,7 @@ int PASQAL_QDMI_device_session_query_device_property(
     case QDMI_DEVICE_PROPERTY_OPERATIONS:
       return copy_data(nullptr, 0, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_QUEUELENGTH:
-      return session->cloud ? copy_value(session->cloud->queue_length(), size,
-                                         value, size_ret)
-                            : QDMI_ERROR_NOTSUPPORTED;
+      return copy_value(session->cloud->queue_length(), size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_SUPPORTEDPROGRAMFORMATS:
       return copy_value(QDMI_PROGRAM_FORMAT_CUSTOM1, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_CUSTOM1:
@@ -671,9 +661,6 @@ int PASQAL_QDMI_device_session_retrieve_device_job_by_id(
   }
   if (!session->initialized) {
     return QDMI_ERROR_BADSTATE;
-  }
-  if (!session->cloud) {
-    return QDMI_ERROR_NOTSUPPORTED; // the mock keeps no job registry
   }
   return guarded([&]() -> int {
     auto retrieved = std::make_unique<PASQAL_QDMI_Device_Job_impl_d>();
@@ -872,24 +859,11 @@ int PASQAL_QDMI_device_job_submit(PASQAL_QDMI_Device_Job job) {
     // again.
     job->submission_attempted = true;
     const auto code = guarded([&]() -> int {
-      if (job->session->cloud) {
-        job->id = job->session->cloud->submit_batch(sources, *job->shots);
-        job->is_batch = true;
-        for (auto& program : job->programs) {
-          program.status = QDMI_JOB_STATUS_SUBMITTED;
-          program.runs = job->shots;
-        }
-      } else {
-        static std::atomic<size_t> next_mock_id{0};
-        job->id = "mock-" + std::to_string(next_mock_id.fetch_add(1));
-        for (auto& program : job->programs) {
-          program.runs = job->shots;
-          program.results = pasqal::make_histogram(
-              {{std::string(*program.atom_count, '0'), *job->shots}},
-              program.atom_count, program.runs);
-          program.status = QDMI_JOB_STATUS_DONE;
-        }
-        job->mapping_loaded = true;
+      job->id = job->session->cloud->submit_batch(sources, *job->shots);
+      job->is_batch = true;
+      for (auto& program : job->programs) {
+        program.status = QDMI_JOB_STATUS_SUBMITTED;
+        program.runs = job->shots;
       }
       return QDMI_SUCCESS;
     });
@@ -920,7 +894,7 @@ int PASQAL_QDMI_device_job_cancel(PASQAL_QDMI_Device_Job job) {
     if (job->status == QDMI_JOB_STATUS_CANCELED) {
       return QDMI_SUCCESS;
     }
-    if (job->status == QDMI_JOB_STATUS_CREATED || !job->session->cloud) {
+    if (job->status == QDMI_JOB_STATUS_CREATED) {
       for (auto& program : job->programs) {
         program.status = QDMI_JOB_STATUS_CANCELED;
       }

@@ -158,9 +158,10 @@ build = "cp3*"
 skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
+environment-pass = [ "PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID" ]
 test-command = "pytest test/python"
 test-groups = [ "test" ]
-test-sources = [ "test/python" ]
+test-sources = [ "test/python", "pyproject.toml" ]
 
 [tool.cibuildwheel.linux]
 config-settings = { "cmake.define.CMAKE_PREFIX_PATH" = "/usr/include/openssl3;/usr/lib64/openssl3" }
@@ -243,6 +244,7 @@ error-on-warning = true
 minversion = "9.1"
 testpaths = [ "test/python" ]
 addopts = [ "-ra", "--numprocesses=auto" ]
+markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
 strict = true

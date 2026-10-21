@@ -29,8 +29,7 @@ generate_device_defs_executable(${QDMI_PREFIX} TARGET ${QDMI_TARGET_NAME})
 set(QDMI_TEST_TARGET_NAME "${QDMI_TARGET_NAME}-test")
 
 # test_pasqal_device.cpp is the upstream QDMI device template test, generated with the PASQAL
-# prefix. It initializes a session without parameters, so the backend is selected through
-# PASQAL_QDMI_BACKEND.
+# prefix. Sessions query public EMU_FREE metadata.
 add_executable(${QDMI_TEST_TARGET_NAME} test_pasqal_device.cpp)
 
 target_link_libraries(
@@ -51,17 +50,8 @@ endif()
 
 gtest_discover_tests(
   ${QDMI_TEST_TARGET_NAME}
-  TEST_SUFFIX .mock
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  PROPERTIES ENVIRONMENT "PASQAL_QDMI_BACKEND=MOCK" DISCOVERY_TIMEOUT 60)
-
-if(BUILD_PASQAL_QDMI_LIVE_TESTS)
-  gtest_discover_tests(
-    ${QDMI_TEST_TARGET_NAME}
-    TEST_SUFFIX .live
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PROPERTIES ENVIRONMENT "PASQAL_QDMI_BACKEND=EMU_FREE" LABELS live DISCOVERY_TIMEOUT 60)
-endif()
+  PROPERTIES ENVIRONMENT "PASQAL_QDMI_BACKEND=EMU_FREE" LABELS integration DISCOVERY_TIMEOUT 60)
 
 if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   add_executable(${QDMI_TARGET_NAME}-unit-test unit/test_pasqal_cloud.cpp unit/test_pasqal_unit.cpp)

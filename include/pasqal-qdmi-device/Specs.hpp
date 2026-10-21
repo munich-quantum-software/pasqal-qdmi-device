@@ -40,8 +40,6 @@ struct DeviceSpecs {
   /// Use the selected backend's capacity, not an arbitrary QPU's Pulser model.
   static DeviceSpecs from_metadata(const std::string& name,
                                    const std::string& raw);
-  /// Deterministic all-zero transport fixture, not a physical simulator.
-  static DeviceSpecs mock();
 };
 
 } // namespace pasqal

@@ -28,10 +28,14 @@ from cloud import Cloud
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 
 @pytest.fixture
-def cloud() -> Iterator[Cloud]:
+def cloud(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Cloud]:
     """Yield a local cloud and free jobs before their owning sessions."""
+    for variable in ("PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID", "PASQAL_AUTHFILE"):
+        monkeypatch.delenv(variable, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
     with ExitStack() as cleanup:
         yield Cloud(cleanup)

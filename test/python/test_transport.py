@@ -23,13 +23,14 @@ from __future__ import annotations
 import ctypes
 import json
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from cloud import PROGRAMS, Cloud, CloudHandler
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
 
 @pytest.fixture
@@ -72,6 +73,43 @@ def test_public_device_metadata_needs_no_credentials(cloud: Cloud) -> None:
     cloud.session(token=None)
     assert cloud.auth_calls == 0
     assert all(auth is None for _, _, auth in cloud.requests)
+
+
+@pytest.mark.parametrize("source", ["authfile", "environment", "session"])
+def test_credentials_precedence(cloud: Cloud, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, source: str) -> None:
+    """Prefer explicit session credentials, then nonempty environment, then file."""
+    authfile = tmp_path / "auth"
+    authfile.write_text("username=authfile\npassword=authfile\nproject_id=authfile\n")
+    monkeypatch.setenv("PASQAL_AUTHFILE", str(authfile))
+    for name in ("PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID"):
+        monkeypatch.setenv(name, "" if source == "authfile" else "environment")
+
+    auth_payloads: list[dict[str, list[str]]] = []
+    original = CloudHandler.do_POST
+
+    def capture_auth(request: CloudHandler) -> None:
+        if request.path == "/auth":
+            data = request.rfile.read(int(request.headers.get("Content-Length", 0)))
+            auth_payloads.append(parse_qs(data.decode()))
+            request.reply({"access_token": "fixture", "expires_in": 3600})
+        else:
+            original(request)
+
+    monkeypatch.setattr(CloudHandler, "do_POST", capture_auth)
+    session = ctypes.c_void_p()
+    assert cloud.api.session_alloc(ctypes.byref(session)) == 0
+    cloud.cleanup.callback(cloud.api.session_free, session)
+    params = [(0, cloud.base), (3, cloud.base + "/auth"), (999999995, "EMU_FREE")]
+    if source == "session":
+        params += [(4, source), (5, source), (999999997, source)]
+    for param, value in params:
+        data = value.encode() + b"\0"
+        assert cloud.api.session_set_parameter(session, param, len(data), ctypes.c_char_p(data)) == 0
+    assert cloud.api.session_init(session) == 0
+    assert cloud.api.job_submit(cloud.job(session)) == 0
+    assert auth_payloads[0]["username"] == [source]
+    assert auth_payloads[0]["password"] == [source]
+    assert cloud.submissions[0]["project_id"] == source
 
 
 def test_public_hardware_specs_select_the_requested_backend(

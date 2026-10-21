@@ -21,7 +21,7 @@
 # dependencies = ["nox"]
 # ///
 
-"""Offline development checks for the native device and its installed package."""
+"""Development checks for the native device and its installed package."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def lint(session: nox.Session) -> None:
 
 @nox.session(python=PYTHON_ALL_VERSIONS, reuse_venv=True, default=True)
 def tests(session: nox.Session) -> None:
-    """Test the installed package, Core discovery and local HTTP boundaries."""
+    """Test the installed package on EMU_FREE and local HTTP boundaries."""
     session.run(
         "uv",
         "run",

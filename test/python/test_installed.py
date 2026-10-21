@@ -20,19 +20,14 @@
 
 from __future__ import annotations
 
-import gc
-import json
 import subprocess
 import sys
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-from cloud import EXPECTED, PROGRAMS, Cloud
-from mqt.core.qdmi import CustomProperty, Job, ProgramFormat, builtin_driver
-from pasqal_cloud.authentication import TokenProvider
-from pasqal_cloud.endpoints import Endpoints
-from pasqal_cloud.pasqal_cloud_client import PasqalCloudClient
+from cloud import PROGRAMS, Cloud
+from mqt.core.qdmi import ProgramFormat, builtin_driver
 from pulser import Sequence
 from pulser.backend import EmulationConfig
 from pulser.backend.default_observables import Occupation
@@ -54,14 +49,6 @@ def open_device(cloud: Cloud) -> Device:
     )
 
 
-class LocalToken(TokenProvider):
-    """Use a deterministic token with the SDK's local fixture endpoint."""
-
-    def get_token(self) -> str:  # ruff: ignore[no-self-use] - SDK interface override
-        """Return the fixture token without authentication."""
-        return "token"
-
-
 def test_catalogue_discovery_is_offline_and_from_installed_wheel(tmp_path: Path) -> None:
     """Discover every catalogue entry without importing the provider module."""
     code = """
@@ -75,8 +62,6 @@ expected = {
 }
 assert expected <= set(builtin_driver.registered_device_ids())
 assert 'pasqal.qdmi' not in sys.modules
-for device_id in expected:
-    assert builtin_driver.open_device(device_id, custom1='MOCK').qubits_num() > 0
 assert 'pasqal.qdmi' not in sys.modules
 from pasqal.qdmi import PASQAL_QDMI_CATALOG_PATH, PASQAL_QDMI_DEVICE_ID, PASQAL_QDMI_LIBRARY_PATH
 assert PASQAL_QDMI_DEVICE_ID == "pasqal.default"
@@ -86,40 +71,6 @@ assert PASQAL_QDMI_LIBRARY_PATH.is_file()
 assert 'site-packages' in str(PASQAL_QDMI_LIBRARY_PATH)
 """
     subprocess.run([sys.executable, "-I", "-c", code], cwd=tmp_path, check=True)  # ruff: ignore[subprocess-without-shell-equals-true] - fixed interpreter and source
-
-
-def test_core_sdk_ordering_and_lifetime(cloud: Cloud) -> None:
-    """Match SDK counts while preserving program order and Core ownership."""
-    device = open_device(cloud)
-    assert device.id == "pasqal.emu-free"
-    assert device.qubits_num() == 12
-    assert device.sites() == device.operations() == []
-    assert device.supported_program_formats() == [ProgramFormat.CUSTOM1]
-    specs = device.query_custom_property(CustomProperty.CUSTOM1, str)
-    assert specs is not None
-    assert json.loads(specs)[0]["device_type"] == "FRESNEL"
-    job = device.submit_job(PROGRAMS, ProgramFormat.CUSTOM1, num_shots=9)
-    assert job.num_programs == 2
-    assert job.wait(timeout=2)
-    assert job.check() == Job.Status.DONE
-    assert [job.get_counts(i) for i in range(2)] == EXPECTED
-    assert [json.loads(job.get_program(i)) for i in range(2)] == [json.loads(p) for p in PROGRAMS]
-    saved_id = job.id
-    del device
-    gc.collect()
-    assert job.get_counts(0) == EXPECTED[0]
-    restored = open_device(cloud).retrieve_job_by_id(saved_id)
-    assert [restored.get_counts(i) for i in range(2)] == EXPECTED
-    assert len(cloud.submissions) == 1
-    sdk = PasqalCloudClient(
-        project_id="project",
-        token_provider=LocalToken(),
-        endpoints=Endpoints(core=cloud.base + "/core-fast", account=cloud.base + "/account"),
-    )
-    for i, cloud_id in enumerate(cloud.job_ids):
-        official = sdk.get_job(cloud_id).result
-        assert official is not None
-        assert {bits[::-1]: count for bits, count in official.items()} == restored.get_counts(i)
 
 
 def test_core_submit_error_does_not_retry(cloud: Cloud) -> None:

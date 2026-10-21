@@ -63,10 +63,6 @@ cmake_dependent_option(
   INSTALL_PASQAL_QDMI_DEVICE "Generate installation instructions for the Pasqal QDMI Device"
   ${PROJECT_IS_TOP_LEVEL} "NOT USE_INSTALLED_PASQAL_QDMI_DEVICE" OFF)
 option(BUILD_PASQAL_QDMI_TESTS "Build tests for the Pasqal QDMI device" ${PROJECT_IS_TOP_LEVEL})
-cmake_dependent_option(
-  BUILD_PASQAL_QDMI_LIVE_TESTS
-  "Also run the device tests against Pasqal Cloud using ~/.pasqal/config" OFF
-  "BUILD_PASQAL_QDMI_TESTS" OFF)
 
 include(cmake/ExternalDependencies.cmake)
 

@@ -52,17 +52,10 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   FetchContent_Declare(nlohmann_json URL ${JSON_URL} FIND_PACKAGE_ARGS ${JSON_VERSION})
   list(APPEND FETCH_PACKAGES nlohmann_json)
 
-  # cpr builds its own static libcurl against the system TLS library by default.
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  set(CPR_BUILD_TESTS
-      OFF
-      CACHE BOOL "Disable CPR tests" FORCE)
   set(CPR_CURL_USE_LIBPSL
       OFF
       CACHE BOOL "Disable libpsl for CPR curl" FORCE)
-  set(CPR_USE_SYSTEM_CURL
-      OFF
-      CACHE BOOL "Use system curl for CPR")
   # Keep bundled curl independent of optional host compression libraries.
   set(CURL_ZLIB
       OFF
@@ -73,13 +66,10 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   set(CURL_ZSTD
       OFF
       CACHE STRING "Disable Zstandard in bundled curl" FORCE)
-  set(BUILD_STATIC_CURL
-      ON
-      CACHE BOOL "Enable static curl for CPR" FORCE)
-  FetchContent_Declare(
-    curl
-    URL https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.xz
-    URL_HASH SHA256=8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5)
+  # HTTP/1.1 needs no nghttp2 and avoids CVE-2026-92392 in cpr's bundled curl.
+  set(USE_NGHTTP2
+      OFF
+      CACHE BOOL "Disable HTTP/2 in bundled curl" FORCE)
   FetchContent_Declare(
     cpr
     GIT_REPOSITORY https://github.com/libcpr/cpr.git

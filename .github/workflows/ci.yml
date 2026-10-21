@@ -64,6 +64,7 @@ jobs:
 
   documentation:
     name: 📚 Documentation
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.event.pull_request.base.repo.id
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,6 +76,10 @@ jobs:
           python-version: "3.14"
       - name: Build documentation
         run: uvx nox -s docs
+        env:
+          PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+          PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+          PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: documentation
@@ -91,13 +96,17 @@ jobs:
       fail-fast: false
       matrix:
         runs-on: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-2025]
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@6c933678406ab1887a137839dfd0e290f12917da # v2.5.2
+    uses: $/.github/workflows/wheels.yml
     with:
       runs-on: ${{ matrix.runs-on }}
+    secrets:
+      PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+      PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+      PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
 
   # This job provides the required branch protection check.
   required-checks-pass:
-    name: Required offline checks
+    name: Required checks
     if: always()
     needs: [native, lint, documentation, build-sdist, build-wheel]
     runs-on: ubuntu-slim
@@ -105,4 +114,5 @@ jobs:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
         with:
+          allowed-skips: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.id != github.event.pull_request.base.repo.id && 'documentation' || '' }}
           jobs: ${{ toJSON(needs) }}
