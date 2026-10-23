@@ -96,9 +96,6 @@ if(BUILD_PASQAL_QDMI_TESTS)
   list(APPEND FETCH_PACKAGES googletest)
 endif()
 
-# Build cpr and its bundled curl statically, without changing BUILD_SHARED_LIBS for a project that
-# includes this one.
-set(BUILD_SHARED_LIBS_PREV ${BUILD_SHARED_LIBS})
+# CPR uses BUILD_SHARED_LIBS to select its library type.
 set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(${FETCH_PACKAGES})
-set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_PREV})
