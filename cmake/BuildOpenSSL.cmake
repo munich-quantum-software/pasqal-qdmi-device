@@ -122,8 +122,6 @@ if(MSVC)
         "Building OpenSSL requires a Visual Studio developer environment with nmake or jom.")
   endif()
   string(APPEND _openssl_environment "set \"PATH=${_openssl_compiler_dir};%PATH%\"\n")
-  set(_openssl_library_prefix lib)
-  set(_openssl_library_suffix .lib)
 elseif(APPLE OR CMAKE_SYSTEM_NAME STREQUAL Linux)
   find_program(_openssl_make_program NAMES gmake make REQUIRED)
   set(_openssl_make "${_openssl_make_program}" -j${_openssl_jobs})
@@ -156,8 +154,6 @@ elseif(APPLE OR CMAKE_SYSTEM_NAME STREQUAL Linux)
       list(APPEND _openssl_options "--sysroot=${CMAKE_SYSROOT}")
     endif()
   endif()
-  set(_openssl_library_prefix lib)
-  set(_openssl_library_suffix .a)
 else()
   message(FATAL_ERROR "Bundled OpenSSL does not support ${CMAKE_SYSTEM_NAME}.")
 endif()
@@ -172,10 +168,8 @@ string(SUBSTRING "${_openssl_signature}" 0 16 _openssl_signature)
 set(_openssl_build "${openssl_BINARY_DIR}/${_openssl_signature}")
 set(OPENSSL_ROOT_DIR "${_openssl_build}/install")
 set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
-set(OPENSSL_SSL_LIBRARY
-    "${OPENSSL_ROOT_DIR}/lib/${_openssl_library_prefix}ssl${_openssl_library_suffix}")
-set(OPENSSL_CRYPTO_LIBRARY
-    "${OPENSSL_ROOT_DIR}/lib/${_openssl_library_prefix}crypto${_openssl_library_suffix}")
+set(OPENSSL_SSL_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libssl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(OPENSSL_CRYPTO_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libcrypto${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 if(NOT EXISTS "${_openssl_build}/complete"
    OR NOT EXISTS "${OPENSSL_SSL_LIBRARY}"
@@ -236,11 +230,13 @@ if(NOT EXISTS "${_openssl_build}/complete"
 endif()
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
-# FindOpenSSL uses these names on MSVC before defining OpenSSL::SSL/Crypto.
-if(MSVC)
-  set(LIB_EAY_DEBUG "${OPENSSL_CRYPTO_LIBRARY}")
-  set(LIB_EAY_RELEASE "${OPENSSL_CRYPTO_LIBRARY}")
-  set(SSL_EAY_DEBUG "${OPENSSL_SSL_LIBRARY}")
-  set(SSL_EAY_RELEASE "${OPENSSL_SSL_LIBRARY}")
-endif()
-find_package(OpenSSL ${OPENSSL_VERSION} EXACT REQUIRED MODULE)
+# Use the dependency metadata from this build, never a host pkg-config file.
+find_package(
+  OpenSSL
+  ${OPENSSL_VERSION}
+  EXACT
+  REQUIRED
+  CONFIG
+  PATHS
+  "${OPENSSL_ROOT_DIR}/lib/cmake/OpenSSL"
+  NO_DEFAULT_PATH)
