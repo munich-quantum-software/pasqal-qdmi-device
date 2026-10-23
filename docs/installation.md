@@ -31,24 +31,36 @@ The base package has no Python runtime dependencies. Native C/C++ applications
 can use the installed QDMI library without Core or the Pasqal Python SDK.
 
 Wheel builds target Linux x86_64/ARM64 with manylinux_2_28 (glibc >=2.28), macOS
-ARM64 >=13.3, and Windows x86_64. Native builds and wheels link CPR, its bundled
-curl, and OpenSSL 3.5.9 statically on every platform. Certificate verification
-uses the host's CA bundle on Linux and the native trust stores on macOS and
-Windows. HTTP responses support gzip, deflate, Brotli and Zstd compression
-through bundled static libraries.
+ARM64 >=13.3, and Windows x86_64. CPR is linked statically on every platform.
+Linux and Windows also link curl statically, using installed OpenSSL 3 on Linux
+and Schannel on Windows. macOS uses Apple's system curl. Certificate
+verification uses the host's CA bundle on Linux and the native trust stores on
+macOS and Windows. The curl build detects installed zlib, Brotli, Zstd and
+HTTP/2 libraries automatically. Only supported response encodings are advertised
+to servers.
+
+Native and source installations receive OpenSSL fixes through the system package
+manager. Portable Linux wheels bundle OpenSSL and other non-platform shared
+libraries; those copies receive security updates through new device releases.
+macOS and Windows use operating-system TLS in both native builds and wheels.
 
 ## Native CMake installation
 
-A source build needs a C++20 compiler, CMake >=3.24, Perl, and Make (NMake with
-MSVC on Windows). Windows x64 builds also need NASM. CMake builds pinned OpenSSL
-and CPR/curl sources; no system TLS or curl development packages are needed.
-QDMI, JSON and test dependencies are fetched when installed versions are
-unavailable. On Windows, use a Developer Command Prompt for the intended
-architecture. OpenSSL uses MSVC even when the device uses ClangCL.
+A source build needs a C++20 compiler, CMake >=3.24, and OpenSSL >=3.0
+development files on Linux. For example:
 
-Use a native x86_64 or ARM64 toolchain. When embedding the project with
-`add_subdirectory`, configure it before other dependencies create
-`OpenSSL::SSL`, `OpenSSL::Crypto` or `ZLIB::ZLIB` targets.
+```sh
+# Debian / Ubuntu
+sudo apt-get install libssl-dev zlib1g-dev
+# Fedora / RHEL 9 or later
+sudo dnf install openssl-devel zlib-devel
+```
+
+macOS and Windows need only the C++ build tools and CMake; TLS uses the
+operating system. Compression libraries are optional. CMake builds pinned CPR
+and curl sources, using Apple's curl on macOS, and does not build OpenSSL or
+compression libraries. QDMI, JSON and test dependencies are fetched when
+installed versions are unavailable.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release
