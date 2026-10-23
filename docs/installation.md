@@ -42,7 +42,7 @@ A source build needs a C++20 compiler, CMake >=3.24, Perl, and Make (NMake with
 MSVC on Windows). Windows x64 builds also need NASM. CMake builds pinned OpenSSL
 and CPR/curl sources; no system TLS or curl development packages are needed.
 QDMI, JSON and test dependencies are fetched when installed versions are
-unavailable.
+unavailable. On Windows, OpenSSL uses MSVC even when the device uses ClangCL.
 
 Build one x86_64 or ARM64 architecture at a time; Linux builds use a native
 toolchain. When embedding the project with `add_subdirectory`, configure it
