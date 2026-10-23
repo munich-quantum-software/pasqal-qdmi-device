@@ -8,7 +8,8 @@ build:
   tools:
     python: "3.14"
   apt_packages:
-    - libssl-dev
+    - make
+    - perl
   jobs:
     pre_build:
       - python -m pip install uv

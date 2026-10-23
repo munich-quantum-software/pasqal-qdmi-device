@@ -5,10 +5,9 @@ Core and use Core >=4.1.1. Check `pasqal.qdmi.PASQAL_QDMI_CATALOG_PATH` and the
 distribution entry point `mqt.core.qdmi.manifests`. A checkout alone is not an
 installed package. Discovery does not require credentials.
 
-**The native library cannot load.** Check the wheel's platform and architecture,
-and ensure repaired TLS dependencies are present. Source installs must retain
-the library and adjacent relative manifest. Run the relocated consumer check to
-separate packaging from authentication.
+**The native library cannot load.** Check the wheel's platform and architecture.
+Source installs must retain the library and adjacent relative manifest. Run the
+relocated consumer check to separate packaging from authentication.
 
 **Authentication fails or expires.** Recheck your account credentials, auth file
 and project membership. Use the documented authentication URL and create a fresh

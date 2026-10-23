@@ -53,13 +53,15 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   list(APPEND FETCH_PACKAGES nlohmann_json)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  include(${CMAKE_CURRENT_LIST_DIR}/BuildOpenSSL.cmake)
   # These dependencies are private to the device; install only the device's public interface.
   set(CPR_ENABLE_INSTALL OFF)
   set(CPR_USE_SYSTEM_CURL OFF)
+  set(CPR_FORCE_OPENSSL_BACKEND ON)
   set(CURL_DISABLE_INSTALL ON)
-  if(APPLE)
-    set(USE_APPLE_SECTRUST ON)
-  endif()
+  set(USE_APPLE_SECTRUST ${APPLE})
+  set(CURL_USE_LIBSSH2 OFF)
+  set(USE_LIBIDN2 OFF)
   set(CPR_CURL_USE_LIBPSL
       OFF
       CACHE BOOL "Disable libpsl for CPR curl" FORCE)
@@ -80,8 +82,7 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   FetchContent_Declare(
     cpr
     GIT_REPOSITORY https://github.com/libcpr/cpr.git
-    GIT_TAG 1.15.1
-    FIND_PACKAGE_ARGS 1.15.1)
+    GIT_TAG 1.15.1)
   list(APPEND FETCH_PACKAGES cpr)
 endif()
 

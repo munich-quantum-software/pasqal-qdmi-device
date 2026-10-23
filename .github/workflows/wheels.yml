@@ -27,6 +27,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Install NASM
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        uses: ilammy/setup-nasm@e77cc62a22a374a4d0668286007cc3e3b4c17760 # v1.5.2
+        with:
+          version: "3.02"
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:

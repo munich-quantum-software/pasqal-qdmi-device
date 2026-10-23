@@ -98,31 +98,18 @@ if(INSTALL_PASQAL_QDMI_DEVICE)
     FILES "${PROJECT_SOURCE_DIR}/LICENSE"
     DESTINATION "${LICENSE_INSTALL_DIR}"
     COMPONENT ${QDMI_TARGET_NAME}_Runtime)
-  foreach(DEPENDENCY IN ITEMS cpr nlohmann_json curl)
+  foreach(DEPENDENCY IN ITEMS cpr nlohmann_json curl openssl)
     FetchContent_GetProperties(${DEPENDENCY})
     if(${DEPENDENCY}_SOURCE_DIR)
       file(GLOB DEPENDENCY_LICENSE "${${DEPENDENCY}_SOURCE_DIR}/LICENSE"
-           "${${DEPENDENCY}_SOURCE_DIR}/LICENSE.MIT" "${${DEPENDENCY}_SOURCE_DIR}/COPYING")
+           "${${DEPENDENCY}_SOURCE_DIR}/LICENSE.MIT" "${${DEPENDENCY}_SOURCE_DIR}/LICENSE.txt"
+           "${${DEPENDENCY}_SOURCE_DIR}/COPYING")
       install(
         FILES ${DEPENDENCY_LICENSE}
         DESTINATION "${LICENSE_INSTALL_DIR}/${DEPENDENCY}"
         COMPONENT ${QDMI_TARGET_NAME}_Runtime)
     endif()
   endforeach()
-  # Wheels bundle OpenSSL through static linkage or Linux wheel repair.
-  if(SKBUILD AND CURL_USE_OPENSSL)
-    find_file(
-      OPENSSL_LICENSE
-      NAMES LICENSE.txt copyright
-      PATHS "${OPENSSL_INCLUDE_DIR}/.." /usr/share/licenses/openssl3-libs
-            /usr/share/licenses/openssl-libs /usr/share/doc/libssl-dev
-      NO_DEFAULT_PATH REQUIRED)
-    file(REAL_PATH "${OPENSSL_LICENSE}" OPENSSL_LICENSE_FILE)
-    install(
-      FILES "${OPENSSL_LICENSE_FILE}"
-      DESTINATION "${LICENSE_INSTALL_DIR}/openssl"
-      COMPONENT ${QDMI_TARGET_NAME}_Runtime)
-  endif()
 
   install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/${QDMI_TARGET_NAME}-config.cmake"

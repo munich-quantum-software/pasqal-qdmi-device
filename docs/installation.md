@@ -31,17 +31,22 @@ The base package has no Python runtime dependencies. Native C/C++ applications
 can use the installed QDMI library without Core or the Pasqal Python SDK.
 
 Wheel builds target Linux x86_64/ARM64 with manylinux_2_28 (glibc >=2.28), macOS
-ARM64 >=13.3, and Windows x86_64. The default manylinux image supplies OpenSSL 3
-through `openssl3-devel` for the bundled curl. macOS wheels use Apple's system
-TLS trust store with bundled curl and OpenSSL.
+ARM64 >=13.3, and Windows x86_64. Native builds and wheels link CPR, its bundled
+curl, and OpenSSL 3.5.9 statically on every platform. Certificate verification
+uses the host's CA bundle on Linux and the native trust stores on macOS and
+Windows.
 
 ## Native CMake installation
 
-A source build needs a C++20 compiler, CMake >=3.24, a build tool and TLS
-development headers. Bundled curl requires OpenSSL >=3 on Linux and macOS,
-typically provided by `libssl-dev` or Homebrew. CMake fetches pinned released
-QDMI, CPR/curl, JSON and test dependencies when installed versions are
+A source build needs a C++20 compiler, CMake >=3.24, Perl, and Make (NMake with
+MSVC on Windows). Windows x64 builds also need NASM. CMake builds pinned OpenSSL
+and CPR/curl sources; no system TLS or curl development packages are needed.
+QDMI, JSON and test dependencies are fetched when installed versions are
 unavailable.
+
+Build one x86_64 or ARM64 architecture at a time; Linux builds use a native
+toolchain. When embedding the project with `add_subdirectory`, configure it
+before other dependencies create `OpenSSL::SSL` or `OpenSSL::Crypto` targets.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release
