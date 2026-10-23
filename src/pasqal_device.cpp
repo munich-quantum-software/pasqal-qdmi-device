@@ -850,7 +850,7 @@ int PASQAL_QDMI_device_job_submit(PASQAL_QDMI_Device_Job job) {
     return QDMI_ERROR_BADSTATE;
   }
   return guarded([job]() -> int {
-    std::vector<std::string> sources;
+    std::vector<std::string_view> sources;
     sources.reserve(job->programs.size());
     for (const auto& program : job->programs) {
       sources.push_back(*program.source);

@@ -107,10 +107,11 @@ json parse_json(const std::string& body) {
 }
 
 const json& field(const json& object, const char* name) {
-  if (!object.is_object() || !object.contains(name)) {
+  const auto it = object.find(name);
+  if (it == object.end()) {
     throw CloudError(0, "missing cloud response field");
   }
-  return object.at(name);
+  return *it;
 }
 
 std::string string_field(const json& object, const char* name) {
@@ -186,7 +187,7 @@ void configure(cpr::Session& session, const std::string& url,
 }
 
 /// Return the body of a successful response, throw `CloudError` otherwise.
-std::string checked(const cpr::Response& response) {
+std::string checked(cpr::Response&& response) {
   if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT) {
     throw TimeoutError("cloud request timed out");
   }
@@ -198,7 +199,7 @@ std::string checked(const cpr::Response& response) {
                      "cloud HTTP status " +
                          std::to_string(response.status_code));
   }
-  return response.text;
+  return std::move(response.text);
 }
 
 std::optional<std::string> base64url_decode(std::string_view text) {
@@ -361,13 +362,13 @@ CloudClient::bearer(Deadline deadline,
   cpr::Session session;
   configure(session, config_.auth_endpoint, deadline);
   session.SetPayload(std::move(form));
-  const auto response = session.Post();
+  auto response = session.Post();
   if (response.error.code == cpr::ErrorCode::OK &&
       response.status_code >= 400 && response.status_code < 500) {
     throw AuthError("token request rejected with HTTP status " +
                     std::to_string(response.status_code));
   }
-  const auto data = parse_json(checked(response));
+  const auto data = parse_json(checked(std::move(response)));
   auto token = string_field(data, "access_token");
   if (token.empty() || token.find_first_of("\r\n") != std::string::npos ||
       token.find('\0') != std::string::npos) {
@@ -416,7 +417,7 @@ std::string CloudClient::get(const std::string& path, bool authenticated,
     configure(session, config_.base_url + path, deadline);
     response = session.Get();
   }
-  return checked(response);
+  return checked(std::move(response));
 }
 
 std::string CloudClient::post(const std::string& path,
@@ -439,8 +440,9 @@ std::string CloudClient::patch(const std::string& path) {
 
 std::string CloudClient::device_spec_entries(bool is_emulator) {
   validate_id(config_.device_type);
-  const auto entries = field(
-      parse_json(get("/core-fast/api/v1/devices/public-specs", false)), "data");
+  const auto response =
+      parse_json(get("/core-fast/api/v1/devices/public-specs", false));
+  const auto& entries = field(response, "data");
   if (!entries.is_array()) {
     throw CloudError(0, "invalid cloud device specs");
   }
@@ -459,12 +461,12 @@ std::string CloudClient::device_metadata() {
   validate_id(config_.device_type);
   // Inactive or account-specific devices may be absent from the public list.
   for (const bool authenticated : {false, true}) {
-    const auto devices =
-        field(parse_json(get(std::string(authenticated ? "/core-fast/api/v2/"
-                                                       : "/core-fast/api/v1/") +
-                                 "devices?device_type=" + config_.device_type,
-                             authenticated)),
-              "data");
+    const auto response =
+        parse_json(get(std::string(authenticated ? "/core-fast/api/v2/"
+                                                 : "/core-fast/api/v1/") +
+                           "devices?device_type=" + config_.device_type,
+                       authenticated));
+    const auto& devices = field(response, "data");
     if (!devices.is_array()) {
       throw CloudError(0, "invalid cloud device list");
     }
@@ -484,8 +486,9 @@ std::string CloudClient::device_metadata() {
   throw UnsupportedError("selected cloud backend is unavailable");
 }
 
-std::string CloudClient::submit_batch(const std::vector<std::string>& sequences,
-                                      std::size_t runs) {
+std::string
+CloudClient::submit_batch(const std::vector<std::string_view>& sequences,
+                          std::size_t runs) {
   if (sequences.empty() || runs == 0) {
     throw std::invalid_argument("a batch requires programs and positive runs");
   }
@@ -499,8 +502,9 @@ std::string CloudClient::submit_batch(const std::vector<std::string>& sequences,
                   {"open", false},
                   {"device_type", config_.device_type},
                   {"project_id", config_.project_id}};
-  const auto data =
-      field(parse_json(post("/core-fast/api/v1/batches", body.dump())), "data");
+  const auto response =
+      parse_json(post("/core-fast/api/v1/batches", body.dump()));
+  const auto& data = field(response, "data");
   const auto id = string_field(data, "id");
   validate_id(id);
   return id;
@@ -508,9 +512,9 @@ std::string CloudClient::submit_batch(const std::vector<std::string>& sequences,
 
 CloudBatch CloudClient::batch(const std::string& batch_id, Deadline deadline) {
   validate_id(batch_id);
-  const auto data = field(
-      parse_json(get("/core-fast/api/v2/batches/" + batch_id, true, deadline)),
-      "data");
+  const auto response =
+      parse_json(get("/core-fast/api/v2/batches/" + batch_id, true, deadline));
+  const auto& data = field(response, "data");
   CloudBatch result;
   if (string_field(data, "id") != batch_id) {
     throw CloudError(0, "cloud batch identifier mismatch");
@@ -537,9 +541,9 @@ CloudBatch CloudClient::batch(const std::string& batch_id, Deadline deadline) {
 
 CloudJob CloudClient::job(const std::string& job_id, Deadline deadline) {
   validate_id(job_id);
-  const auto data =
-      field(parse_json(get("/core-fast/api/v2/jobs/" + job_id, true, deadline)),
-            "data");
+  const auto response =
+      parse_json(get("/core-fast/api/v2/jobs/" + job_id, true, deadline));
+  const auto& data = field(response, "data");
   CloudJob result;
   if (string_field(data, "id") != job_id) {
     throw CloudError(0, "cloud job identifier mismatch");
@@ -561,17 +565,17 @@ void CloudClient::cancel_batch(const std::string& batch_id) {
 
 std::size_t CloudClient::queue_length() {
   validate_id(config_.device_type);
-  json data;
+  json response;
   try {
-    data = field(parse_json(get("/core-fast/api/v1/devices/" +
-                                config_.device_type + "/queue-size")),
-                 "data");
+    response = parse_json(get("/core-fast/api/v1/devices/" +
+                              config_.device_type + "/queue-size"));
   } catch (const CloudError& error) {
     if (error.status == 404 || error.status == 405 || error.status == 501) {
       throw UnsupportedError("cloud queue information is unavailable");
     }
     throw;
   }
+  const auto& data = field(response, "data");
   if (!data.is_object() || !data.contains("device_queues") ||
       data.at("device_queues").is_null()) {
     throw UnsupportedError("cloud queue information is unavailable");
@@ -603,10 +607,9 @@ void CloudClient::cancel_job(const std::string& job_id) {
 std::map<std::string, std::size_t>
 CloudClient::job_counts(const std::string& job_id, Deadline deadline) {
   validate_id(job_id);
-  const auto data =
-      field(parse_json(get("/core-fast/api/v1/jobs/" + job_id + "/results_link",
-                           true, deadline)),
-            "data");
+  const auto response = parse_json(get(
+      "/core-fast/api/v1/jobs/" + job_id + "/results_link", true, deadline));
+  const auto& data = field(response, "data");
   const auto& link = field(data, "results_link");
   if (!link.is_string()) {
     throw CloudError(0, "cloud job results are unavailable");
@@ -614,7 +617,8 @@ CloudClient::job_counts(const std::string& job_id, Deadline deadline) {
   // The link is presigned: fetch it without the API bearer token.
   cpr::Session session;
   configure(session, link.get<std::string>(), deadline);
-  const auto counter = field(parse_json(checked(session.Get())), "counter");
+  const auto results = parse_json(checked(session.Get()));
+  const auto& counter = field(results, "counter");
   if (!counter.is_object() || counter.empty()) {
     throw CloudError(0, "Pasqal result counter is empty");
   }

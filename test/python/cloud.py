@@ -33,7 +33,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
@@ -96,8 +96,6 @@ class CloudServer(ThreadingHTTPServer):
 class CloudHandler(BaseHTTPRequestHandler):
     """Implement the endpoint shapes consumed by the native provider and SDK."""
 
-    server: CloudServer
-
     def log_message(self, format: str, *args: object) -> None:  # ruff: ignore[builtin-argument-shadowing] - stdlib interface
         """Silence request logging, including synthetic authentication responses."""
 
@@ -114,7 +112,7 @@ class CloudHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Serve backend metadata, batch status or result fixtures."""
-        s = self.server.state
+        s = cast("CloudServer", self.server).state
         path = urlparse(self.path).path
         s.requests.append(("GET", self.path, self.headers.get("Authorization")))
         if (
@@ -170,7 +168,7 @@ class CloudHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Record submissions and emulate authentication or a lost response."""
-        s = self.server.state
+        s = cast("CloudServer", self.server).state
         data = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         if self.path == "/auth":
             s.auth_calls += 1
@@ -188,7 +186,7 @@ class CloudHandler(BaseHTTPRequestHandler):
 
     def do_PATCH(self) -> None:
         """Record cancellation while allowing the completion race fixture."""
-        s = self.server.state
+        s = cast("CloudServer", self.server).state
         s.cancellations.append(self.path)
         if not s.cancel_race:
             s.statuses = dict.fromkeys(s.job_ids, "CANCELING")

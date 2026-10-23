@@ -113,7 +113,7 @@ public:
   /// Selected backend's public metadata, independently of Pulser device specs.
   std::string device_metadata();
   /// Submit one closed native batch and return its ID without follow-up reads.
-  std::string submit_batch(const std::vector<std::string>& sequences,
+  std::string submit_batch(const std::vector<std::string_view>& sequences,
                            std::size_t runs);
   CloudBatch batch(const std::string& batch_id,
                    Deadline deadline = std::nullopt);

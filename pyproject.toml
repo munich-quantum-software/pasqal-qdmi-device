@@ -18,7 +18,7 @@
 
 [build-system]
 build-backend = "scikit_build_core.build"
-requires = [ "scikit-build-core>=1.1" ]
+requires = [ "scikit-build-core>=1.1.1" ]
 
 
 [project]
@@ -76,7 +76,7 @@ Issues = "https://github.com/munich-quantum-software/pasqal-qdmi-device/issues"
 dev = [
   { include-group = "build" },
   { include-group = "test" },
-  "nox>=2026.8.10",
+  "nox>=2026.10.20",
 ]
 test = [
   "mqt-core>=4.1.1",
@@ -91,10 +91,10 @@ docs = [
   "mqt-core>=4.1.1",
   "myst-nb>=1.4",
   "pulser>=1.9.1",
-  "sphinx>=9",
+  "sphinx>=9.0.4",
   "sphinx-copybutton>=0.5.2",
 ]
-build = [ "scikit-build-core>=1.1" ]
+build = [ "scikit-build-core>=1.1.1" ]
 
 
 [tool.scikit-build]
@@ -240,11 +240,11 @@ exclude = [
 error-on-warning = true
 
 
-[tool.pytest.ini_options]
-minversion = "9.1"
-testpaths = [ "test/python" ]
+[tool.pytest]
 addopts = [ "-ra", "--numprocesses=auto" ]
-markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
+markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
+minversion = "9.1"
 strict = true
+testpaths = [ "test/python" ]

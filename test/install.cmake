@@ -43,17 +43,13 @@ run("${CMAKE_COMMAND}"
     Release
     --parallel
     2)
-foreach(component Runtime Development)
-  run("${CMAKE_COMMAND}"
-      --install
-      "${work}/producer"
-      --config
-      Release
-      --prefix
-      "${prefix}"
-      --component
-      "pasqal-qdmi-device_${component}")
-endforeach()
+run("${CMAKE_COMMAND}"
+    --install
+    "${work}/producer"
+    --config
+    Release
+    --prefix
+    "${prefix}")
 file(RENAME "${prefix}" "${relocated}")
 run("${CMAKE_COMMAND}"
     -S

@@ -53,6 +53,9 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   list(APPEND FETCH_PACKAGES nlohmann_json)
 
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  # These dependencies are private to the device; install only the device's public interface.
+  set(CPR_ENABLE_INSTALL OFF)
+  set(CURL_DISABLE_INSTALL ON)
   set(CPR_CURL_USE_LIBPSL
       OFF
       CACHE BOOL "Disable libpsl for CPR curl" FORCE)

@@ -31,7 +31,7 @@ from pathlib import Path
 
 import nox
 
-nox.needs_version = ">=2026.8.10"
+nox.needs_version = ">=2026.10.20"
 nox.options.default_venv_backend = "uv"
 
 PYTHON_ALL_VERSIONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
