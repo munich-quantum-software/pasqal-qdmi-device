@@ -426,7 +426,8 @@ std::string CloudClient::post(const std::string& path,
   configure(session, config_.base_url + path);
   session.SetBearer(cpr::Bearer{bearer()});
   session.SetHeader(cpr::Header{{"Content-Type", "application/json"}});
-  session.SetBody(cpr::Body{body});
+  // The serialized body stays alive until this synchronous POST completes.
+  session.SetBodyView(cpr::BodyView{body});
   return checked(session.Post());
 }
 
