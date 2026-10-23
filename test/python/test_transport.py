@@ -21,7 +21,9 @@
 from __future__ import annotations
 
 import ctypes
+import gzip
 import json
+import zlib
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
@@ -66,6 +68,50 @@ def responses(cloud: Cloud, monkeypatch: pytest.MonkeyPatch) -> dict[tuple[str, 
         monkeypatch.setattr(CloudHandler, "do_" + method, handler)
 
     return overrides
+
+
+@pytest.mark.parametrize("encoding", ["gzip", "deflate", "br", "zstd"])
+def test_compressed_responses(cloud: Cloud, monkeypatch: pytest.MonkeyPatch, encoding: str) -> None:
+    """Negotiate and decode compressed metadata, authentication and results."""
+    # Precompressed {"access_token": "refreshed", "expires_in": 3600} avoids extra Python dependencies.
+    compressed_auth = {
+        "br": bytes.fromhex(
+            "1b30000004e26ca9da65c16613b4a21054f5f7e0901380db9750daea2ad33879e4514f87146e86dc342ac8adc5f530fb"
+        ),
+        "zstd": bytes.fromhex(
+            "28b52ffd20318901007b226163636573735f746f6b656e223a2022726566726573686564222c202265787069726573"
+            "5f696e223a20333630307d"
+        ),
+    }
+    accepted: list[set[str]] = []
+    compress = gzip.compress if encoding == "gzip" else zlib.compress
+    if encoding not in compressed_auth:
+        cloud.device["description"] = "compressed metadata " * 65536
+    original_reply = CloudHandler.reply
+
+    def reply(request: CloudHandler, body: object, status: int = 200) -> None:
+        if encoding in compressed_auth:
+            if request.path != "/auth":
+                return original_reply(request, body, status)
+            assert body == {"access_token": "refreshed", "expires_in": 3600}
+            data = compressed_auth[encoding]
+        else:
+            data = compress(json.dumps(body).encode())
+        accepted.append(set(request.headers.get("Accept-Encoding", "").replace(" ", "").split(",")))
+        request.send_response(status)
+        request.send_header("Content-Type", "application/json")
+        request.send_header("Content-Encoding", encoding)
+        request.send_header("Content-Length", str(len(data)))
+        request.end_headers()
+        request.wfile.write(data)
+        return None
+
+    monkeypatch.setattr(CloudHandler, "reply", reply)
+    job = cloud.job(cloud.session(token=None, credentials=True))
+    assert cloud.api.job_submit(job) == 0
+    assert [cloud.counts(job, i) for i in range(2)] == EXPECTED
+    assert accepted
+    assert all({"gzip", "deflate", "br", "zstd"} <= encodings for encodings in accepted)
 
 
 def test_session_reuses_connections_without_reusing_request_state(

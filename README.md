@@ -49,8 +49,9 @@ uv pip install '.[core,pulser]'
 ```
 
 Building from source requires a C++20 compiler, CMake 3.24 or newer, Perl and
-Make (NMake with MSVC on Windows; Windows x64 also needs NASM). CMake builds
-OpenSSL and curl from source. A native installation does not require Python:
+Make (NMake in a Developer Command Prompt on Windows; Windows x64 also needs
+NASM). CMake builds OpenSSL and curl from source. A native installation does not
+require Python:
 
 ```console
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PASQAL_QDMI_TESTS=OFF

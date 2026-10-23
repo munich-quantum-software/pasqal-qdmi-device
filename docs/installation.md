@@ -34,7 +34,8 @@ Wheel builds target Linux x86_64/ARM64 with manylinux_2_28 (glibc >=2.28), macOS
 ARM64 >=13.3, and Windows x86_64. Native builds and wheels link CPR, its bundled
 curl, and OpenSSL 3.5.9 statically on every platform. Certificate verification
 uses the host's CA bundle on Linux and the native trust stores on macOS and
-Windows.
+Windows. HTTP responses support gzip, deflate, Brotli and Zstd compression
+through bundled static libraries.
 
 ## Native CMake installation
 
@@ -42,11 +43,12 @@ A source build needs a C++20 compiler, CMake >=3.24, Perl, and Make (NMake with
 MSVC on Windows). Windows x64 builds also need NASM. CMake builds pinned OpenSSL
 and CPR/curl sources; no system TLS or curl development packages are needed.
 QDMI, JSON and test dependencies are fetched when installed versions are
-unavailable. On Windows, OpenSSL uses MSVC even when the device uses ClangCL.
+unavailable. On Windows, use a Developer Command Prompt for the intended
+architecture. OpenSSL uses MSVC even when the device uses ClangCL.
 
-Build one x86_64 or ARM64 architecture at a time; Linux builds use a native
-toolchain. When embedding the project with `add_subdirectory`, configure it
-before other dependencies create `OpenSSL::SSL` or `OpenSSL::Crypto` targets.
+Use a native x86_64 or ARM64 toolchain. When embedding the project with
+`add_subdirectory`, configure it before other dependencies create
+`OpenSSL::SSL`, `OpenSSL::Crypto` or `ZLIB::ZLIB` targets.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release
