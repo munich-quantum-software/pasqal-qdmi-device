@@ -79,8 +79,7 @@ Project sources use Apache-2.0 WITH LLVM-exception. The `license-tools` hook
 maintains MQSC and Pasqal copyright headers. Files adapted from upstream
 projects retain their original notices as well.
 
-There is no source `licenses` directory or project `NOTICE`. Build artifacts
-carry notices for bundled dependencies, copied from the dependencies used by the
-build. Check repaired wheels when changing dependencies or build images, since
-repair may add shared libraries. Externally supplied native dependencies remain
-the packager's responsibility when redistributed.
+Build artifacts include `LICENSE` and the license texts of bundled CPR, curl and
+JSON. Linux wheels also contain OpenSSL 3 under Apache-2.0; the LLVM exception
+applies only to the device. Check bundled libraries and their notices when
+changing dependencies or wheel images.
