@@ -109,15 +109,13 @@ if(INSTALL_PASQAL_QDMI_DEVICE)
         COMPONENT ${QDMI_TARGET_NAME}_Runtime)
     endif()
   endforeach()
-  # Linux wheel repair bundles the system OpenSSL libraries.
-  if(SKBUILD
-     AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
-     AND CURL_USE_OPENSSL)
+  # Wheels bundle OpenSSL through static linkage or Linux wheel repair.
+  if(SKBUILD AND CURL_USE_OPENSSL)
     find_file(
       OPENSSL_LICENSE
       NAMES LICENSE.txt copyright
-      PATHS /usr/share/licenses/openssl3-libs /usr/share/licenses/openssl-libs
-            /usr/share/doc/libssl-dev
+      PATHS "${OPENSSL_INCLUDE_DIR}/.." /usr/share/licenses/openssl3-libs
+            /usr/share/licenses/openssl-libs /usr/share/doc/libssl-dev
       NO_DEFAULT_PATH REQUIRED)
     file(REAL_PATH "${OPENSSL_LICENSE}" OPENSSL_LICENSE_FILE)
     install(

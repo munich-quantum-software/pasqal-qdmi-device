@@ -33,14 +33,15 @@ can use the installed QDMI library without Core or the Pasqal Python SDK.
 Wheel builds target Linux x86_64/ARM64 with manylinux_2_28 (glibc >=2.28), macOS
 ARM64 >=13.3, and Windows x86_64. The default manylinux image supplies OpenSSL 3
 through `openssl3-devel` for the bundled curl. macOS wheels use Apple's system
-curl and TLS trust store.
+TLS trust store with bundled curl and OpenSSL.
 
 ## Native CMake installation
 
 A source build needs a C++20 compiler, CMake >=3.24, a build tool and TLS
-development headers. Bundled curl requires OpenSSL >=3 on Linux, typically
-provided by `libssl-dev`. CMake fetches pinned released QDMI, CPR/curl, JSON and
-test dependencies when installed versions are unavailable.
+development headers. Bundled curl requires OpenSSL >=3 on Linux and macOS,
+typically provided by `libssl-dev` or Homebrew. CMake fetches pinned released
+QDMI, CPR/curl, JSON and test dependencies when installed versions are
+unavailable.
 
 ```sh
 cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release

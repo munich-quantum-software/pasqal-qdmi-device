@@ -55,7 +55,11 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   # These dependencies are private to the device; install only the device's public interface.
   set(CPR_ENABLE_INSTALL OFF)
+  set(CPR_USE_SYSTEM_CURL OFF)
   set(CURL_DISABLE_INSTALL ON)
+  if(APPLE)
+    set(USE_APPLE_SECTRUST ON)
+  endif()
   set(CPR_CURL_USE_LIBPSL
       OFF
       CACHE BOOL "Disable libpsl for CPR curl" FORCE)
