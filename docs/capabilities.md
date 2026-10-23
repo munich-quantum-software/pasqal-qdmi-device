@@ -64,7 +64,9 @@ The generated public headers plus `pasqal-qdmi-device/constants.h` define
 symbolic aliases. Standard buffer sizing applies: first query required bytes,
 then provide at least that much storage; string byte counts include the
 terminating NUL. Result buffers are caller-owned. Keep a C session alive until
-its jobs are freed; Core owns these relationships through its bindings.
+its jobs are freed; Core owns these relationships through its bindings. Calls on
+one session and all of its jobs must be serialized. Separate sessions may run in
+parallel.
 
 ## Submission and recovery
 

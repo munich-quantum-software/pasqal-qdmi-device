@@ -21,9 +21,9 @@
 #pragma once
 
 #include <chrono>
+#include <cpr/connection_pool.h>
 #include <cstddef>
 #include <map>
-#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -101,6 +101,7 @@ bool is_cloud_id(std::string_view id);
 /// within 10 s of its JWT expiry. Tokens without a JWT expiry are usable.
 bool is_token_usable(const std::string& token, long long now);
 
+/// Serialize calls on one client; independent clients may run in parallel.
 class CloudClient {
 public:
   explicit CloudClient(CloudConfig config);
@@ -130,13 +131,10 @@ private:
                   Deadline deadline = std::nullopt);
   std::string post(const std::string& path, const std::string& body);
   std::string patch(const std::string& path);
-  std::string
-  bearer(Deadline deadline = std::nullopt,
-         const std::optional<std::string>& rejected_token = std::nullopt);
+  std::string bearer(Deadline deadline = std::nullopt, bool refresh = false);
 
   CloudConfig config_;
-  /// Guards `token_`: jobs of one session may be checked from several threads.
-  std::timed_mutex token_mutex_;
+  cpr::ConnectionPool connection_pool_;
   std::string token_;
   std::optional<std::chrono::steady_clock::time_point> token_expiry_;
 };

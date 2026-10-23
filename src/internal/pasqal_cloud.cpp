@@ -142,7 +142,7 @@ std::size_t nonnegative_integer(const json& value) {
   return static_cast<std::size_t>(number);
 }
 
-/// Resolve CURL_CA_BUNDLE, then SSL_CERT_FILE, then a readable system bundle,
+/// Resolve CURL_CA_BUNDLE, then SSL_CERT_FILE, then a readable Linux bundle,
 /// since the bundled static libcurl does not know the distribution's CA path.
 std::string ca_bundle() {
   for (const auto* variable : {"CURL_CA_BUNDLE", "SSL_CERT_FILE"}) {
@@ -151,6 +151,7 @@ std::string ca_bundle() {
       return value;
     }
   }
+#ifdef __linux__
   for (const auto* bundle : {"/etc/ssl/certs/ca-certificates.crt",
                              "/etc/pki/tls/certs/ca-bundle.crt",
                              "/etc/ssl/ca-bundle.pem", "/etc/ssl/cert.pem"}) {
@@ -158,10 +159,12 @@ std::string ca_bundle() {
       return bundle;
     }
   }
+#endif
   return {};
 }
 
 void configure(cpr::Session& session, const std::string& url,
+               const cpr::ConnectionPool& connection_pool,
                Deadline deadline = std::nullopt) {
   validate_url(url);
   auto timeout =
@@ -174,10 +177,10 @@ void configure(cpr::Session& session, const std::string& url,
     }
     timeout = std::min(timeout, remaining);
   }
+  session.SetConnectionPool(connection_pool);
   session.SetUrl(cpr::Url{url});
   // Avoid CVE-2026-92392 with system curl as well as the bundled build.
   session.SetHttpVersion(cpr::HttpVersion{cpr::HttpVersionCode::VERSION_1_1});
-  session.SetRedirect(cpr::Redirect{false});
   session.SetTimeout(cpr::Timeout{timeout});
   session.SetConnectTimeout(cpr::ConnectTimeout{
       std::min<std::chrono::milliseconds>(timeout, CONNECT_TIMEOUT)});
@@ -319,18 +322,8 @@ CloudClient::CloudClient(CloudConfig config) : config_(std::move(config)) {
   }
 }
 
-std::string
-CloudClient::bearer(Deadline deadline,
-                    const std::optional<std::string>& rejected_token) {
-  std::unique_lock lock(token_mutex_, std::defer_lock);
-  if (deadline) {
-    if (!lock.try_lock_until(*deadline)) {
-      throw TimeoutError("token refresh deadline expired");
-    }
-  } else {
-    lock.lock();
-  }
-  if (rejected_token && token_ == *rejected_token) {
+std::string CloudClient::bearer(Deadline deadline, bool refresh) {
+  if (refresh) {
     token_.clear();
     token_expiry_.reset();
   }
@@ -360,7 +353,7 @@ CloudClient::bearer(Deadline deadline,
                     "are not configured");
   }
   cpr::Session session;
-  configure(session, config_.auth_endpoint, deadline);
+  configure(session, config_.auth_endpoint, connection_pool_, deadline);
   session.SetPayload(std::move(form));
   auto response = session.Post();
   if (response.error.code == cpr::ErrorCode::OK &&
@@ -403,18 +396,16 @@ CloudClient::bearer(Deadline deadline,
 std::string CloudClient::get(const std::string& path, bool authenticated,
                              Deadline deadline) {
   cpr::Session session;
-  std::string token;
   if (authenticated) {
-    token = bearer(deadline);
-    session.SetBearer(cpr::Bearer{token});
+    session.SetBearer(cpr::Bearer{bearer(deadline)});
   }
-  configure(session, config_.base_url + path, deadline);
+  configure(session, config_.base_url + path, connection_pool_, deadline);
   session.SetHeader(cpr::Header{{"Content-Type", "application/json"}});
   auto response = session.Get();
   if (authenticated && response.error.code == cpr::ErrorCode::OK &&
       response.status_code == 401) {
-    session.SetBearer(cpr::Bearer{bearer(deadline, token)});
-    configure(session, config_.base_url + path, deadline);
+    session.SetBearer(cpr::Bearer{bearer(deadline, true)});
+    configure(session, config_.base_url + path, connection_pool_, deadline);
     response = session.Get();
   }
   return checked(std::move(response));
@@ -423,7 +414,7 @@ std::string CloudClient::get(const std::string& path, bool authenticated,
 std::string CloudClient::post(const std::string& path,
                               const std::string& body) {
   cpr::Session session;
-  configure(session, config_.base_url + path);
+  configure(session, config_.base_url + path, connection_pool_);
   session.SetBearer(cpr::Bearer{bearer()});
   session.SetHeader(cpr::Header{{"Content-Type", "application/json"}});
   // The serialized body stays alive until this synchronous POST completes.
@@ -433,7 +424,7 @@ std::string CloudClient::post(const std::string& path,
 
 std::string CloudClient::patch(const std::string& path) {
   cpr::Session session;
-  configure(session, config_.base_url + path);
+  configure(session, config_.base_url + path, connection_pool_);
   session.SetBearer(cpr::Bearer{bearer()});
   session.SetHeader(cpr::Header{{"Content-Type", "application/json"}});
   return checked(session.Patch());
@@ -617,7 +608,7 @@ CloudClient::job_counts(const std::string& job_id, Deadline deadline) {
   }
   // The link is presigned: fetch it without the API bearer token.
   cpr::Session session;
-  configure(session, link.get<std::string>(), deadline);
+  configure(session, link.get<std::string>(), connection_pool_, deadline);
   const auto results = parse_json(checked(session.Get()));
   const auto& counter = field(results, "counter");
   if (!counter.is_object() || counter.empty()) {

@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-from cloud import PROGRAMS, Cloud, CloudHandler
+from cloud import EXPECTED, PROGRAMS, Cloud, CloudHandler
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -66,6 +66,87 @@ def responses(cloud: Cloud, monkeypatch: pytest.MonkeyPatch) -> dict[tuple[str, 
         monkeypatch.setattr(CloudHandler, "do_" + method, handler)
 
     return overrides
+
+
+def test_session_reuses_connections_without_reusing_request_state(
+    cloud: Cloud, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reuse TCP across auth, API and presigned reads without leaking headers."""
+    connections = 0
+    original_setup = CloudHandler.setup
+    original_post = CloudHandler.do_POST
+    posts: list[tuple[str, str | None]] = []
+
+    def setup(request: CloudHandler) -> None:
+        nonlocal connections
+        connections += 1
+        original_setup(request)
+
+    def post(request: CloudHandler) -> None:
+        posts.append((request.path, request.headers.get("Authorization")))
+        original_post(request)
+
+    monkeypatch.setattr(CloudHandler, "protocol_version", "HTTP/1.1")
+    monkeypatch.setattr(CloudHandler, "setup", setup)
+    monkeypatch.setattr(CloudHandler, "do_POST", post)
+    job = cloud.job(cloud.session(token=None, credentials=True))
+    assert cloud.api.job_submit(job) == 0
+    assert [cloud.counts(job, i) for i in range(2)] == EXPECTED
+    assert connections == 1
+    assert cloud.auth_calls == 1
+    assert posts == [("/auth", None), ("/core-fast/api/v1/batches", "Bearer refreshed")]
+    downloads = [auth for _, path, auth in cloud.requests if path.startswith("/results/")]
+    assert downloads == [None, None]
+    assert any(auth == "Bearer refreshed" for _, _, auth in cloud.requests)
+    cloud.session()
+    assert connections == 2
+
+
+@pytest.mark.parametrize("status", [303, 307])
+def test_redirects_follow_http_method_semantics(cloud: Cloud, monkeypatch: pytest.MonkeyPatch, status: int) -> None:
+    """Follow metadata redirects, preserving POST only when the server asks."""
+    original_get = CloudHandler.do_GET
+    redirected: list[tuple[str, bytes]] = []
+    submitted: list[bytes] = []
+    metadata_reads: list[str] = []
+
+    def get(request: CloudHandler) -> None:
+        if request.path == "/core-fast/api/v1/devices?device_type=EMU_FREE":
+            request.send_response(302)
+            request.send_header("Location", "/redirected-devices")
+            request.send_header("Content-Length", "0")
+            request.end_headers()
+        elif request.path == "/redirected-devices":
+            metadata_reads.append(request.path)
+            request.reply({"data": [cloud.device]})
+        elif request.path == "/redirected-batches":
+            redirected.append((request.command, request.rfile.read(int(request.headers.get("Content-Length", 0)))))
+            request.reply({"data": cloud.submit_response})
+        else:
+            original_get(request)
+
+    def post(request: CloudHandler) -> None:
+        data = request.rfile.read(int(request.headers.get("Content-Length", 0)))
+        if request.path == "/core-fast/api/v1/batches":
+            submitted.append(data)
+            request.send_response(status)
+            request.send_header("Location", "/redirected-batches")
+            request.send_header("Content-Length", "0")
+            request.end_headers()
+        else:
+            redirected.append((request.command, data))
+            request.reply({"data": cloud.submit_response})
+
+    monkeypatch.setattr(CloudHandler, "do_GET", get)
+    monkeypatch.setattr(CloudHandler, "do_POST", post)
+    job = cloud.job(cloud.session())
+    assert cloud.api.job_submit(job) == 0
+    assert cloud.job_id(job) == "pasqal-batch:batch-1"
+    assert metadata_reads == ["/redirected-devices"]
+    assert len(submitted) == 1
+    assert json.loads(submitted[0])["jobs"] == [{"sequence": program, "runs": 9} for program in PROGRAMS]
+    expected = [("POST", submitted[0])] if status == 307 else [("GET", b"")]
+    assert redirected == expected
 
 
 def test_public_device_metadata_needs_no_credentials(cloud: Cloud) -> None:
