@@ -28,8 +28,7 @@ generate_device_defs_executable(${QDMI_PREFIX} TARGET ${QDMI_TARGET_NAME})
 
 set(QDMI_TEST_TARGET_NAME "${QDMI_TARGET_NAME}-test")
 
-# test_pasqal_device.cpp is the upstream QDMI device template test, generated with the PASQAL
-# prefix. Sessions query public EMU_FREE metadata.
+# Query public EMU_FREE metadata through the exported C interface.
 add_executable(${QDMI_TEST_TARGET_NAME} test_pasqal_device.cpp)
 
 target_link_libraries(

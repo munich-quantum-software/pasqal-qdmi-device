@@ -104,6 +104,10 @@ def test_one_batch_preserves_order_and_fresh_retrieval(cloud: Cloud) -> None:
     assert cloud.submissions[0]["sequence_builder"] is None
     assert not cloud.submissions[0]["open"]
     assert [cloud.counts(job, i) for i in range(2)] == EXPECTED
+    reads = len(cloud.requests)
+    assert cloud.api.job_wait(job, 1) == 0
+    assert cloud.status(job) == 4
+    assert len(cloud.requests) == reads
     fresh = cloud.retrieve(cloud.session(), cloud.job_id(job))
     assert [cloud.counts(fresh, i) for i in range(2)] == EXPECTED
     assert cloud.api.job_submit(fresh) == -10
@@ -151,6 +155,7 @@ def test_partial_batch_metadata_cannot_swap_or_omit_programs(cloud: Cloud) -> No
     assert cloud.api.job_submit(job) == 0
     cloud.job_ids = ["job-z"]
     assert cloud.api.job_check(job, ctypes.byref(ctypes.c_int())) != 0
+    assert cloud.api.job_get_program_status(job, 1, ctypes.byref(ctypes.c_int())) != 0
 
 
 def test_successful_sibling_remains_accessible(cloud: Cloud) -> None:
@@ -158,8 +163,10 @@ def test_successful_sibling_remains_accessible(cloud: Cloud) -> None:
     cloud.statuses["job-a"] = "ERROR"
     job = cloud.job(cloud.session())
     assert cloud.api.job_submit(job) == 0
-    assert cloud.status(job) == 6
     assert cloud.counts(job, 0) == EXPECTED[0]
+    assert cloud.status(job, 1) == 6
+    assert cloud.api.job_wait(job, 1) == 0
+    assert cloud.status(job) == 6
     assert cloud.api.job_get_results(job, 1, 1, 0, None, None) == -10
 
 

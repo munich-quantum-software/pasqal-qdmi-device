@@ -1,10 +1,9 @@
 # Capabilities and limits
 
-The native interface targets released QDMI 1.4.0. Python integration targets
-released MQT Core 4.1.1; no unreleased shared dependency is required for the
-supported path. The scope is native Pulser transport; gate-based frontend
-compilation is not supported. EMU_FREE has been validated end to end; hardware
-execution has not.
+The native interface targets QDMI 1.4.0. Python integration uses MQT Core 4.1.1
+or later, directly or through Pulser's `QPUBackend` with `QDMIConnection`.
+Programs use native Pulser transport; gate-based frontend compilation is
+unsupported. EMU_FREE has been validated end to end; hardware execution has not.
 
 ## Device catalogue
 
@@ -78,13 +77,12 @@ the provider to reconcile the ambiguity.
 
 Once a batch ID is known, later metadata failures do not require resubmission.
 Retain that ID and retry safe reads or retrieve from a fresh session. A repeated
-submit on the same attempted QDMI job is rejected. Native batching avoids the
-former sequence of independent POSTs and its partial-submission ambiguity.
+submit on the same attempted QDMI job is rejected. The Pulser connection
+includes an accepted batch ID in the exception note if waiting fails.
 
-Core 4.1.1 raises on failed submission and does not return the failed job
-object. General recovery of provider-specific submission diagnostics needs
-shared Core functionality; this package does not introduce a second Python
-binding to bypass that behavior.
+Core raises on failed submission and does not return the failed job object. If
+no batch ID is available, reconcile the submission through Pasqal Cloud before
+creating another batch.
 
 Cancellation cannot undo already completed work. Queue data, backend capacity
 and availability can change; runtime metadata takes precedence over historical

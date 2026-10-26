@@ -92,5 +92,6 @@ struct PASQAL_QDMI_Device_Job_impl_d {
   bool submission_attempted = false;
   std::vector<pasqal::Program> programs;
   std::optional<std::size_t> shots = 1024;
+  // Batch snapshot; indexed reads only update their selected program.
   QDMI_Job_Status status = QDMI_JOB_STATUS_CREATED;
 };

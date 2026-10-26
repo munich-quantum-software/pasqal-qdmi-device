@@ -9,144 +9,132 @@ language_info:
 # Native Pulser usage
 
 Install the `core` and `pulser` extras and
-[configure your credentials](authentication.md). This page runs on Pasqal's free
-EMU_FREE service during the documentation build. It submits two small batches.
-Other emulators can consume credits.
+[configure your credentials](authentication.md). This example submits one batch
+of two small programs to Pasqal's free EMU_FREE service. Other emulators can
+consume credits.
 
 ## Connect to EMU_FREE
 
-MQT Core discovers the installed provider. The native library reads
-`PASQAL_EMAIL`, `PASQAL_PASSWORD` and `PASQAL_PROJECT_ID`, then manages its own
-access tokens.
+`QDMIConnection` connects Pulser's `QPUBackend` to the installed provider
+through MQT Core. Its `device` exposes Core's native QDMI interface. The native
+library reads `PASQAL_EMAIL`, `PASQAL_PASSWORD` and `PASQAL_PROJECT_ID` and
+manages access tokens.
 
 ```{code-cell} ipython3
 import json
 
-from mqt.core.qdmi import CustomProperty, Job, ProgramFormat, builtin_driver
+from mqt.core.qdmi import CustomProperty, Job, ProgramFormat
+from pasqal.qdmi.pulser import QDMIConnection
 
-device = builtin_driver.open_device("pasqal.emu-free")
+connection = QDMIConnection("pasqal.emu-free")
+device = connection.device
 metadata = json.loads(device.query_custom_property(CustomProperty.CUSTOM2, str))
 assert metadata["device_type"] == "EMU_FREE"
 assert metadata["is_emulator"] is True and metadata["bill_usage"] is False
 print(f"EMU_FREE: {device.qubits_num()} atoms")
 ```
 
+The selected catalogue ID determines where programs run. `QPUBackend` validates
+hardware constraints even when the connection targets EMU_FREE.
+Emulator-specific backend options are unsupported.
+
 ## Build the programs
 
-Pulser defines the register, pulses and measurement. Its `MockDevice` supplies
-ideal emulator constraints; execution takes place on Pasqal Cloud. These two
-sequences excite the left and right atoms, respectively:
+Pulser defines the register, pulses and measurement. Use the public device
+specifications exposed by the connection for `QPUBackend`. This example uses
+FRESNEL_CAN1's calibrated layout with traps at `(-5, 0)`, `(0, 0)` and `(5, 0)`
+µm. Two sweep durations prepare the antiferromagnetic state `101`:
 
 ```{code-cell} ipython3
 import math
 
-from pulser import Pulse, Register, Sequence
-from pulser.devices import MockDevice
+from pulser import Pulse, QPUBackend, Sequence
+from pulser.waveforms import InterpolatedWaveform, RampWaveform
 
-register = Register({"left": (-10, 0), "right": (10, 0)})
-programs = []
-for target in register.qubit_ids:
-    sequence = Sequence(register, MockDevice)
-    sequence.declare_channel("local", "rydberg_local", initial_target=target)
-    sequence.add(Pulse.ConstantPulse(1000, math.pi, 0, 0), "local")
-    sequence.measure("ground-rydberg")
-    programs.append(sequence.to_abstract_repr())
-print(sequence)
+fresnel = connection.fetch_available_devices()["FRESNEL_CAN1"]
+layout = next(l for l in fresnel.pre_calibrated_layouts if l.number_of_traps == fresnel.min_layout_traps)
+traps = [layout.get_traps_from_coordinates((x, 0.0))[0] for x in (-5.0, 0.0, 5.0)]
+register = layout.define_register(*traps, qubit_ids=["z", "a", "m"])
+sequence = Sequence(register, fresnel)
+sequence.declare_channel("ising", "rydberg_global")
+duration = sequence.declare_variable("duration", dtype=int)
+omega, delta = 2 * math.pi, 4 * math.pi
+amplitude = InterpolatedWaveform(duration, [1e-9, omega, omega, 1e-9])
+sequence.add(Pulse(amplitude, RampWaveform(duration, -delta, delta), 0), "ising")
+sequence.measure("ground-rydberg")
+job_params = [{"runs": 100, "variables": {"duration": value}} for value in (4000, 6000)]
 ```
 
-`Sequence.to_abstract_repr()` produces the native JSON transport format. Resolve
-register mappings and symbolic variables before submission. Pulse construction
-and validation belong to Pulser; this provider does not compile gate circuits
-into pulses.
+The connection builds one program per parameter set, including register mappings
+when present. Without variables or a mappable register, each parameter set
+repeats the same program. Pulse construction and validation belong to Pulser;
+the native provider accepts built abstract JSON and does not compile gate
+circuits.
 
 ## Submit and wait
 
-Pass one JSON string or an ordered list of programs with a common shot count.
-The provider sends one closed batch; the program index identifies each result.
+Choose Pulser's backend or Core's native interface for submission. Both send one
+closed batch with a common shot count. The executable example uses Pulser:
 
 ```{code-cell} ipython3
-job = device.submit_job(programs, ProgramFormat.CUSTOM1, num_shots=100)
-print("Batch ID:", job.id, flush=True)
+results = QPUBackend(sequence, connection).run(job_params)
+print("Batch ID:", results.batch_id, flush=True)
 ```
 
-Keep the job ID before waiting. A timeout does not cancel the job: retrieve that
-ID later instead of submitting the programs again. Never automatically retry a
-submission whose response was lost.
+The equivalent Core submission accepts serialized programs in input order:
+
+```python
+programs = [sequence.build(**params["variables"]).to_abstract_repr() for params in job_params]
+job = device.submit_job(programs, ProgramFormat.CUSTOM1, num_shots=100)
+```
+
+Keep the batch ID before waiting. A timeout does not cancel the job: retrieve
+that ID later instead of submitting again. Core callers can wait on the returned
+`job` directly. For the Pulser path, retrieve Core's job handle to bound the
+wait:
 
 ```{code-cell} ipython3
-assert job.wait(timeout=300), f"Retrieve pending job {job.id} later"
+job = device.retrieve_job_by_id(results.batch_id)
+assert job.wait(timeout=300), f"Retrieve pending job {results.batch_id} later"
 assert job.check() == Job.Status.DONE
-assert job.num_programs == 2
-counts = [job.get_counts(i) for i in range(job.num_programs)]
-for actual, expected in zip(counts, ("01", "10"), strict=True):
-    assert sum(actual.values()) == 100 and actual.get(expected, 0) >= 98
+counts = [result.final_bitstrings for result in results.results]
+for counter in counts:
+    assert sum(counter.values()) == 100 and counter.get("101", 0) >= 90
 print(counts)
 ```
 
-Different shot counts per program and appending to an existing batch are not
-exposed. See [submission and recovery](capabilities.md#submission-and-recovery)
-for cancellation and failure behavior.
+Pulser job IDs are `<batch ID>#<program index>`. Open batches, appending
+programs and differing shot counts within a batch are unsupported. See
+[submission and recovery](capabilities.md#submission-and-recovery) for failed
+submissions and cancellation.
 
 ## Retrieve from a fresh session
 
 ```{code-cell} ipython3
-fresh_device = builtin_driver.open_device("pasqal.emu-free")
-retrieved = fresh_device.retrieve_job_by_id(job.id)
-assert [retrieved.get_counts(i) for i in range(2)] == counts
-assert [json.loads(retrieved.get_program(i)) for i in range(2)] == [json.loads(p) for p in programs]
+from pulser.backend.remote import RemoteResults
+
+fresh = RemoteResults(results.batch_id, QDMIConnection("pasqal.emu-free"))
+assert [result.final_bitstrings for result in fresh.results] == counts
+assert [result.atom_order for result in fresh.results] == [("z", "a", "m")] * 2
 ```
+
+Core callers use `device.retrieve_job_by_id(batch_id)` and access programs and
+results by their input index. Pulser callers can select individual results with
+`RemoteResults(batch_id, connection, job_ids=[...])`.
 
 ## Interpret atom ordering
 
 Pulser's atom order is register insertion order, independent of label sorting,
-coordinates or trap number. Pasqal SDK counter strings follow this order from
-left to right. Core puts atom index zero at the right, so the provider reverses
-each SDK counter key once.
+coordinates or trap number. Pulser and Pasqal SDK counter strings follow this
+order from left to right. Core/QDMI puts atom index zero at the right.
 
-For register labels `("z", "a", "m")`, an SDK key `"100"` (first atom excited)
-becomes Core/QDMI key `"001"`. Leading zeros remain significant. Convert back
-for Pulser/SDK comparison with
-`{key[::-1]: value for key, value in counts[0].items()}`. Histogram keys and
-counts stay associated; the sum equals the program's run count. Chronological
-shot ordering cannot be reconstructed from a counter.
-
-## Run through a Pulser backend
-
-`pasqal.qdmi.pulser.QDMIConnection` is a Pulser remote connection over this
-device, for use with `QPUBackend`. Emulator-specific backend options are
-unsupported. It returns Pulser devices built from the cloud's public
-specifications. Build against them so Pulser validates the real constraints.
-FRESNEL_CAN1 requires a pre-calibrated layout; its 60-trap layout accepts small
-registers. This adiabatic sweep on three atoms 5 µm apart prepares the
-antiferromagnetic state `101`:
+For labels `("z", "a", "m")`, Pulser key `"100"` becomes Core/QDMI key `"001"`.
+The connection performs the conversion when returning Pulser results. Native
+Core counts can be compared explicitly:
 
 ```{code-cell} ipython3
-from pulser import QPUBackend
-from pulser.waveforms import InterpolatedWaveform, RampWaveform
-
-from pasqal.qdmi.pulser import QDMIConnection
-
-connection = QDMIConnection("pasqal.emu-free")
-fresnel = connection.fetch_available_devices()["FRESNEL_CAN1"]
-layout = next(l for l in fresnel.pre_calibrated_layouts if l.number_of_traps == fresnel.min_layout_traps)
-traps = [layout.get_traps_from_coordinates((x, 0.0))[0] for x in (-5.0, 0.0, 5.0)]
-register = layout.define_register(*traps, qubit_ids=["q0", "q1", "q2"])
-
-omega, delta, duration = 2 * math.pi, 4 * math.pi, 4000
-sequence = Sequence(register, fresnel)
-sequence.declare_channel("ising", "rydberg_global")
-amplitude = InterpolatedWaveform(duration, [1e-9, omega, omega, 1e-9])
-sequence.add(Pulse(amplitude, RampWaveform(duration, -delta, delta), 0), "ising")
-sequence.measure("ground-rydberg")
-
-results = QPUBackend(sequence, connection).run([{"runs": 100}], wait=True)
-counts = results.results[0].final_bitstrings
-assert counts.get("101", 0) >= 90
-print(results.batch_id, dict(counts))
+assert [{bits[::-1]: count for bits, count in job.get_counts(i).items()} for i in range(2)] == counts
 ```
 
-Each Pulser job is one program of a single closed batch, with the job ID
-`<batch ID>#<index>`. All jobs share one run count; open batches and appending
-to a batch are not supported. Counts follow Pulser's register order, so they
-need no reversal. `RemoteResults(batch_id, QDMIConnection(...))` retrieves a
-batch from a new session.
+Leading zeros remain significant, and each counter's total equals its run count.
+Chronological shot ordering cannot be reconstructed from a counter.

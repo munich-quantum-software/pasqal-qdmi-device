@@ -53,9 +53,9 @@ consume credits and are not used by the test suite.
 
 Build HTML with `uvx nox --non-interactive -s docs`. It installs the provider,
 MQT Core and Pulser and executes the end-to-end example. Successful notebook
-executions are cached, as in the peer devices; errors and Sphinx warnings fail
-the build. Clear `docs/_build/.jupyter_cache` to force execution after changing
-credentials. A fresh execution submits one small EMU_FREE batch.
+executions are cached; errors and Sphinx warnings fail the build. Clear
+`docs/_build/.jupyter_cache` to force execution after changing credentials. A
+fresh execution submits one small EMU_FREE batch.
 
 Import the project into Read the Docs with `.readthedocs.yaml`, add the three
 private environment variables, and build the default branch. RtD uses Python

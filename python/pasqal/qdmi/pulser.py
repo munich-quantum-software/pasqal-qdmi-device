@@ -120,14 +120,13 @@ class QDMIConnection(RemoteConnection):
         if len(runs := {params["runs"] for params in job_params}) != 1:
             msg = "QDMI batches need the same run count for every program."
             raise ValueError(msg)
-        programs = [
-            self._add_measurement_to_sequence(
-                sequence.build(**params.get("variables", {}))
-                if sequence.is_parametrized() or sequence.is_register_mappable()
-                else sequence
-            ).to_abstract_repr()
-            for params in job_params
-        ]
+        if sequence.is_parametrized() or sequence.is_register_mappable():
+            programs = [
+                self._add_measurement_to_sequence(sequence.build(**params.get("variables", {}))).to_abstract_repr()
+                for params in job_params
+            ]
+        else:
+            programs = [self._add_measurement_to_sequence(sequence).to_abstract_repr()] * len(job_params)
         job = self.device.submit_job(programs, ProgramFormat.CUSTOM1, runs.pop())
         self._jobs[job.id] = job
         if wait:
@@ -136,7 +135,7 @@ class QDMIConnection(RemoteConnection):
             except BaseException as error:
                 error.add_note(f"Pasqal batch {job.id} was submitted; retrieve it instead of resubmitting.")
                 raise
-        return RemoteResults(job.id, self, job_ids=self._get_job_ids(job.id))
+        return RemoteResults(job.id, self)
 
     def _job(self, batch_id: str) -> Job:
         if batch_id not in self._jobs:

@@ -356,11 +356,7 @@ int check_job(PASQAL_QDMI_Device_Job job,
 int check_program(PASQAL_QDMI_Device_Job job, size_t index) {
   return guarded([&]() -> int {
     refresh_mapping(job, std::nullopt);
-    if (index >= job->programs.size()) {
-      return QDMI_ERROR_OUTOFRANGE;
-    }
     refresh_program(job, job->programs[index], std::nullopt);
-    update_status(job);
     return QDMI_SUCCESS;
   });
 }
