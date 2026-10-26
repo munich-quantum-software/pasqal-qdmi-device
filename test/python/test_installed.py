@@ -28,6 +28,7 @@ import numpy as np
 import pytest
 from cloud import PROGRAMS, Cloud
 from mqt.core.qdmi import ProgramFormat, builtin_driver
+from pasqal_cloud.backends import RemoteMPSBackend
 from pulser import Sequence
 from pulser.backend import EmulationConfig
 from pulser.backend.default_observables import Occupation
@@ -103,3 +104,41 @@ def test_pulser_connection_round_trip(cloud: Cloud) -> None:
     fresh = RemoteResults(results.batch_id, QDMIConnection(**session))
     assert fresh.job_ids == ["pasqal-batch:batch-1#0", "pasqal-batch:batch-1#1"]
     assert [r.final_bitstrings for r in fresh.results] == list(cloud.counters.values())
+
+
+def test_pulser_connection_rejects_unsupported_submissions(cloud: Cloud) -> None:
+    """Reject emulator overrides and empty jobs before creating a batch."""
+    connection = QDMIConnection(base_url=cloud.base, token="token", custom3="project")  # ruff: ignore[hardcoded-password-func-arg] - fixture
+    sequence = Sequence.from_abstract_repr(PROGRAMS[0])
+    with pytest.raises(NotImplementedError, match="Unsupported Pulser submission arguments"):
+        RemoteMPSBackend(sequence, connection).run([{"runs": 9}])
+    with pytest.raises(ValueError, match="job parameter"):
+        connection.submit(sequence, job_params=[])
+    assert cloud.submissions == []
+
+
+def test_pulser_wait_failure_preserves_batch_id(cloud: Cloud) -> None:
+    """Recover an accepted batch after waiting fails without submitting again."""
+    session = {"base_url": cloud.base, "token": "token", "custom3": "project"}
+    cloud.errors["/core-fast/api/v2/jobs/job-z"] = 404
+    with pytest.raises(RuntimeError) as error:
+        QDMIConnection(**session).submit(
+            Sequence.from_abstract_repr(PROGRAMS[0]), wait=True, job_params=[{"runs": 9}] * 2
+        )
+    assert "pasqal-batch:batch-1" in " ".join(error.value.__notes__)
+    cloud.errors.clear()
+    recovered = RemoteResults("pasqal-batch:batch-1", QDMIConnection(**session))
+    assert recovered.results[0].final_bitstrings == cloud.counters["job-z"]
+    assert len(cloud.submissions) == 1
+
+
+def test_pulser_selected_result_ignores_unrelated_read_failure(cloud: Cloud) -> None:
+    """Read a completed program while another program's status is unavailable."""
+    connection = QDMIConnection(base_url=cloud.base, token="token", custom3="project")  # ruff: ignore[hardcoded-password-func-arg] - fixture
+    cloud.statuses = dict.fromkeys(cloud.job_ids, "RUNNING")
+    results = connection.submit(Sequence.from_abstract_repr(PROGRAMS[0]), job_params=[{"runs": 9}] * 2)
+    cloud.statuses["job-z"] = "DONE"
+    cloud.errors["/core-fast/api/v2/jobs/job-a"] = 503
+    selected = RemoteResults(results.batch_id, connection, [results.job_ids[0]])
+    assert selected.results[0].final_bitstrings == cloud.counters["job-z"]
+    assert not any(path.endswith("/jobs/job-a") for _, path, _ in cloud.requests)

@@ -113,11 +113,12 @@ shot ordering cannot be reconstructed from a counter.
 ## Run through a Pulser backend
 
 `pasqal.qdmi.pulser.QDMIConnection` is a Pulser remote connection over this
-device, for use with `QPUBackend`. It returns Pulser devices built from the
-cloud's public specifications. Build against them so Pulser validates the real
-constraints. FRESNEL_CAN1 requires a pre-calibrated layout; its 60-trap layout
-accepts small registers. This adiabatic sweep on three atoms 5 µm apart prepares
-the antiferromagnetic state `101`:
+device, for use with `QPUBackend`. Emulator-specific backend options are
+unsupported. It returns Pulser devices built from the cloud's public
+specifications. Build against them so Pulser validates the real constraints.
+FRESNEL_CAN1 requires a pre-calibrated layout; its 60-trap layout accepts small
+registers. This adiabatic sweep on three atoms 5 µm apart prepares the
+antiferromagnetic state `101`:
 
 ```{code-cell} ipython3
 from pulser import QPUBackend

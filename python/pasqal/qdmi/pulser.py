@@ -98,19 +98,25 @@ class QDMIConnection(RemoteConnection):
             wait (bool): Wait for the batch to finish.
             open (bool): Unsupported; QDMI batches are closed on submission.
             batch_id (str | None): Unsupported; QDMI batches cannot be extended.
-            **kwargs (Any): Pulser submission arguments, notably `job_params`.
+            **kwargs (Any): Nonempty `job_params`; other submission arguments are unsupported.
 
         Returns:
             (RemoteResults): Results of the submitted batch.
 
         Raises:
-            NotImplementedError: If an open or existing batch is requested.
-            ValueError: If the job parameters ask for different run counts.
+            NotImplementedError: If an open/existing batch or unsupported submission argument is requested.
+            ValueError: If job parameters are empty or ask for different run counts.
         """
         if open or batch_id is not None:
             msg = "QDMI batches are closed on submission."
             raise NotImplementedError(msg)
-        job_params: list[JobParams] = kwargs.get("job_params") or [JobParams(runs=100)]
+        job_params: list[JobParams] | None = kwargs.pop("job_params", None)
+        if kwargs:
+            msg = f"Unsupported Pulser submission arguments: {', '.join(kwargs)}."
+            raise NotImplementedError(msg)
+        if not job_params:
+            msg = "At least one job parameter set is required."
+            raise ValueError(msg)
         if len(runs := {params["runs"] for params in job_params}) != 1:
             msg = "QDMI batches need the same run count for every program."
             raise ValueError(msg)
@@ -125,7 +131,11 @@ class QDMIConnection(RemoteConnection):
         job = self.device.submit_job(programs, ProgramFormat.CUSTOM1, runs.pop())
         self._jobs[job.id] = job
         if wait:
-            job.wait()
+            try:
+                job.wait()
+            except BaseException as error:
+                error.add_note(f"Pasqal batch {job.id} was submitted; retrieve it instead of resubmitting.")
+                raise
         return RemoteResults(job.id, self, job_ids=self._get_job_ids(job.id))
 
     def _job(self, batch_id: str) -> Job:
@@ -139,10 +149,15 @@ class QDMIConnection(RemoteConnection):
     def _get_batch_status(self, batch_id: str) -> BatchStatus:
         return BatchStatus[JOB_STATUS[self._job(batch_id).check()].name]
 
-    def _query_job_progress(self, batch_id: str) -> Mapping[str, tuple[JobStatus, Results | None]]:
+    def _query_job_progress(
+        self, batch_id: str, job_ids: list[str] | None = None
+    ) -> Mapping[str, tuple[JobStatus, Results | None]]:
         job = self._job(batch_id)
+        selected = None if job_ids is None else set(job_ids)
         progress: dict[str, tuple[JobStatus, Results | None]] = {}
         for i, job_id in enumerate(self._get_job_ids(batch_id)):
+            if selected is not None and job_id not in selected:
+                continue
             # This device always reports program status.
             status = JOB_STATUS[cast("Job.Status", job.get_program_status(i))]
             result = None
@@ -158,9 +173,9 @@ class QDMIConnection(RemoteConnection):
         return progress
 
     def _fetch_result(self, batch_id: str, job_ids: list[str] | None) -> tuple[Results, ...]:
-        progress = self._query_job_progress(batch_id)
+        progress = self._query_job_progress(batch_id, job_ids)
         results = []
-        for job_id in job_ids or progress:
+        for job_id in progress if job_ids is None else job_ids:
             status, result = progress[job_id]
             if result is None:
                 msg = f"No results for job {job_id}: {status}."
