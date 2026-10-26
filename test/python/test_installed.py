@@ -31,7 +31,10 @@ from mqt.core.qdmi import ProgramFormat, builtin_driver
 from pulser import Sequence
 from pulser.backend import EmulationConfig
 from pulser.backend.default_observables import Occupation
+from pulser.backend.remote import RemoteResults
 from pulser_simulation import QutipBackendV2
+
+from pasqal.qdmi.pulser import QDMIConnection
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -88,3 +91,15 @@ def test_independent_pulser_oracle() -> None:
         assert list(sequence.register.qubit_ids) == ["z", "a", "m"]
         result = QutipBackendV2(sequence, config=EmulationConfig(observables=[Occupation()])).run()
         np.testing.assert_allclose(result.get_result("occupation", 1.0), expected, atol=1e-5)
+
+
+def test_pulser_connection_round_trip(cloud: Cloud) -> None:
+    """Submit through Pulser and retrieve SDK-ordered counts from a fresh connection."""
+    session = {"base_url": cloud.base, "token": "token", "custom3": "project"}
+    sequence = Sequence.from_abstract_repr(PROGRAMS[0])
+    results = QDMIConnection(**session).submit(sequence, job_params=[{"runs": 9}] * 2)
+    assert results.batch_id == "pasqal-batch:batch-1"
+    assert cloud.submissions[0]["jobs"] == [{"sequence": sequence.to_abstract_repr(), "runs": 9}] * 2
+    fresh = RemoteResults(results.batch_id, QDMIConnection(**session))
+    assert fresh.job_ids == ["pasqal-batch:batch-1#0", "pasqal-batch:batch-1#1"]
+    assert [r.final_bitstrings for r in fresh.results] == list(cloud.counters.values())
