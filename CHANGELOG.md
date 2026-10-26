@@ -12,6 +12,7 @@ releases may include breaking changes.
 
 ### Added
 
+- ✨ Add a Pulser remote connection for `QPUBackend` ([**@awennersteen**]).
 - 🎉 Initial commit ([**@awennersteen**], [**@burgholzer**]).
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/

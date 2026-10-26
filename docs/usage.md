@@ -10,8 +10,8 @@ language_info:
 
 Install the `core` and `pulser` extras and
 [configure your credentials](authentication.md). This page runs on Pasqal's free
-EMU_FREE service during the documentation build. It submits one batch of two
-small programs. Other emulators can consume credits.
+EMU_FREE service during the documentation build. It submits two small batches.
+Other emulators can consume credits.
 
 ## Connect to EMU_FREE
 
@@ -109,3 +109,44 @@ for Pulser/SDK comparison with
 `{key[::-1]: value for key, value in counts[0].items()}`. Histogram keys and
 counts stay associated; the sum equals the program's run count. Chronological
 shot ordering cannot be reconstructed from a counter.
+
+## Run through a Pulser backend
+
+`pasqal.qdmi.pulser.QDMIConnection` is a Pulser remote connection over this
+device, for use with `QPUBackend`. Emulator-specific backend options are
+unsupported. It returns Pulser devices built from the cloud's public
+specifications. Build against them so Pulser validates the real constraints.
+FRESNEL_CAN1 requires a pre-calibrated layout; its 60-trap layout accepts small
+registers. This adiabatic sweep on three atoms 5 µm apart prepares the
+antiferromagnetic state `101`:
+
+```{code-cell} ipython3
+from pulser import QPUBackend
+from pulser.waveforms import InterpolatedWaveform, RampWaveform
+
+from pasqal.qdmi.pulser import QDMIConnection
+
+connection = QDMIConnection("pasqal.emu-free")
+fresnel = connection.fetch_available_devices()["FRESNEL_CAN1"]
+layout = next(l for l in fresnel.pre_calibrated_layouts if l.number_of_traps == fresnel.min_layout_traps)
+traps = [layout.get_traps_from_coordinates((x, 0.0))[0] for x in (-5.0, 0.0, 5.0)]
+register = layout.define_register(*traps, qubit_ids=["q0", "q1", "q2"])
+
+omega, delta, duration = 2 * math.pi, 4 * math.pi, 4000
+sequence = Sequence(register, fresnel)
+sequence.declare_channel("ising", "rydberg_global")
+amplitude = InterpolatedWaveform(duration, [1e-9, omega, omega, 1e-9])
+sequence.add(Pulse(amplitude, RampWaveform(duration, -delta, delta), 0), "ising")
+sequence.measure("ground-rydberg")
+
+results = QPUBackend(sequence, connection).run([{"runs": 100}], wait=True)
+counts = results.results[0].final_bitstrings
+assert counts.get("101", 0) >= 90
+print(results.batch_id, dict(counts))
+```
+
+Each Pulser job is one program of a single closed batch, with the job ID
+`<batch ID>#<index>`. All jobs share one run count; open batches and appending
+to a batch are not supported. Counts follow Pulser's register order, so they
+need no reversal. `RemoteResults(batch_id, QDMIConnection(...))` retrieves a
+batch from a new session.
