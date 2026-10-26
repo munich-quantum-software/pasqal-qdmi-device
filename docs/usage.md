@@ -66,8 +66,10 @@ job_params = [{"runs": 100, "variables": {"duration": value}} for value in (4000
 ```
 
 The connection builds one program per parameter set, including register mappings
-when present. Pulse construction and validation belong to Pulser; the native
-provider accepts built abstract JSON and does not compile gate circuits.
+when present. Without variables or a mappable register, each parameter set
+repeats the same program. Pulse construction and validation belong to Pulser;
+the native provider accepts built abstract JSON and does not compile gate
+circuits.
 
 ## Submit and wait
 
