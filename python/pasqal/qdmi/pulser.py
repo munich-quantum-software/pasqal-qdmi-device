@@ -136,7 +136,7 @@ class QDMIConnection(RemoteConnection):
             except BaseException as error:
                 error.add_note(f"Pasqal batch {job.id} was submitted; retrieve it instead of resubmitting.")
                 raise
-        return RemoteResults(job.id, self, job_ids=self._get_job_ids(job.id))
+        return RemoteResults(job.id, self)
 
     def _job(self, batch_id: str) -> Job:
         if batch_id not in self._jobs:

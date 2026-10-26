@@ -126,7 +126,7 @@ class CloudHandler(BaseHTTPRequestHandler):
         if path in s.errors:
             self.reply({"error": "synthetic error"}, s.errors[path])
         elif path.endswith("/public-specs"):
-            self.reply({"data": [{"device_type": "FRESNEL", "specs": SPECS}]})
+            self.reply({"data": s.specs})
         elif path.endswith("/queue-size"):
             self.reply({"data": {"device_queues": s.queues}})
         elif path.endswith("/devices"):
@@ -156,7 +156,7 @@ class CloudHandler(BaseHTTPRequestHandler):
                     "id": job_id,
                     "batch_id": "batch-1",
                     "runs": 9,
-                    "sequence": PROGRAMS[i],
+                    "sequence": s.programs[i],
                     "status": s.statuses[job_id],
                     "project_id": "project",
                     "created_at": "2026-10-20T00:00:00Z",
@@ -177,7 +177,9 @@ class CloudHandler(BaseHTTPRequestHandler):
             else:
                 self.reply({"access_token": "refreshed", "expires_in": s.expires_in})
             return
-        s.submissions.append(json.loads(data))
+        submission = json.loads(data)
+        s.submissions.append(submission)
+        s.programs = [job["sequence"] for job in submission["jobs"]]
         if s.drop_submission:
             self.connection.shutdown(socket.SHUT_RDWR)
             self.connection.close()
@@ -203,6 +205,8 @@ class Cloud:
         self.job_ids = ["job-z", "job-a"]  # Neither lexical nor completion order.
         self.statuses = dict.fromkeys(self.job_ids, "DONE")
         self.counters: dict[str, object] = {"job-z": {"100": 7, "001": 2}, "job-a": {"010": 9}}
+        self.programs = list(PROGRAMS)
+        self.specs = [{"device_type": "FRESNEL", "specs": SPECS}]
         self.device: dict[str, object] = {
             "device_type": "EMU_FREE",
             "name": "EMU_FREE",

@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from typing import TYPE_CHECKING
@@ -29,10 +30,13 @@ import pytest
 from cloud import PROGRAMS, Cloud
 from mqt.core.qdmi import ProgramFormat, builtin_driver
 from pasqal_cloud.backends import RemoteMPSBackend
-from pulser import Sequence
+from pulser import Pulse, QPUBackend, Sequence
 from pulser.backend import EmulationConfig
 from pulser.backend.default_observables import Occupation
-from pulser.backend.remote import RemoteResults
+from pulser.backend.remote import BatchStatus, RemoteResults
+from pulser.devices import DigitalAnalogDevice
+from pulser.register import RegisterLayout
+from pulser.register.mappable_reg import MappableRegister
 from pulser_simulation import QutipBackendV2
 
 from pasqal.qdmi.pulser import QDMIConnection
@@ -41,6 +45,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from mqt.core.qdmi import Device
+    from pulser.backend.remote import JobParams
 
 
 def open_device(cloud: Cloud) -> Device:
@@ -65,7 +70,6 @@ expected = {
     'pasqal.fresnel-sa1',
 }
 assert expected <= set(builtin_driver.registered_device_ids())
-assert 'pasqal.qdmi' not in sys.modules
 assert 'pasqal.qdmi' not in sys.modules
 from pasqal.qdmi import PASQAL_QDMI_CATALOG_PATH, PASQAL_QDMI_DEVICE_ID, PASQAL_QDMI_LIBRARY_PATH
 assert PASQAL_QDMI_DEVICE_ID == "pasqal.default"
@@ -95,14 +99,30 @@ def test_independent_pulser_oracle() -> None:
 
 
 def test_pulser_connection_round_trip(cloud: Cloud) -> None:
-    """Submit through Pulser and retrieve SDK-ordered counts from a fresh connection."""
+    """Build mapped programs through QPUBackend and retrieve ordered Pulser results."""
+    cloud.specs = [{"device_type": "FRESNEL", "specs": DigitalAnalogDevice.to_abstract_repr()}]
     session = {"base_url": cloud.base, "token": "token", "custom3": "project"}
-    sequence = Sequence.from_abstract_repr(PROGRAMS[0])
-    results = QDMIConnection(**session).submit(sequence, job_params=[{"runs": 9}] * 2)
-    assert results.batch_id == "pasqal-batch:batch-1"
-    assert cloud.submissions[0]["jobs"] == [{"sequence": sequence.to_abstract_repr(), "runs": 9}] * 2
+    connection = QDMIConnection(**session)
+    layout = RegisterLayout([(x, 0) for x in range(-20, 40, 10)])
+    sequence = Sequence(MappableRegister(layout, "z", "a", "m"), connection.fetch_available_devices()["FRESNEL"])
+    sequence.declare_channel("local", "rydberg_local", initial_target="z")
+    duration = sequence.declare_variable("duration", dtype=int)
+    sequence.add(Pulse.ConstantPulse(duration, 1.0, 0, 0), "local")
+    params: list[JobParams] = [
+        {"runs": 9, "variables": {"duration": duration, "qubits": {"z": 0, "a": 2, "m": 5}}}
+        for duration in (1000, 2000)
+    ]
+    results = QPUBackend(sequence, connection).run(params, wait=True)
+    for submitted, param in zip(cloud.programs, params, strict=True):
+        built = sequence.build(**param["variables"])
+        built.measure("ground-rydberg")
+        assert json.loads(submitted) == json.loads(built.to_abstract_repr())
+    assert cloud.submissions[0]["jobs"] == [{"sequence": source, "runs": 9} for source in cloud.programs]
     fresh = RemoteResults(results.batch_id, QDMIConnection(**session))
     assert fresh.job_ids == ["pasqal-batch:batch-1#0", "pasqal-batch:batch-1#1"]
+    assert fresh.get_batch_status() is BatchStatus.DONE
+    assert [r.atom_order for r in fresh.results] == [("z", "a", "m")] * 2
+    assert [r.total_duration for r in fresh.results] == [1000, 2000]
     assert [r.final_bitstrings for r in fresh.results] == list(cloud.counters.values())
 
 
