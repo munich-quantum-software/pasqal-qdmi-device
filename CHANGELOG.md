@@ -29,6 +29,8 @@ releases may include breaking changes.
 
 ### Fixed
 
+- 🐛 Limit concurrent cloud tests across CI runs to respect EMU_FREE capacity
+  ([**@burgholzer**]).
 - 🐛 Use GitHub CI for credentialed PR documentation builds ([#5])
   ([**@burgholzer**]).
 - 🐛 Propagate Windows macro protection to native unit tests ([#5])

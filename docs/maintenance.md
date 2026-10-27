@@ -22,6 +22,10 @@ CI covers Linux, macOS and Windows, including installed wheels, relocated native
 consumers and Linux sanitizers. Fork pull requests run the Python tests without
 the `integration` marker and omit credentialed documentation builds; upstream
 credentials are never exposed to fork code. Normal trusted CI runs every test.
+Wheel jobs share four platform slots across CI and release runs; executable docs
+share the Linux x86 slot. At most eight test programs run concurrently, leaving
+two slots under the Explorer plan limit for one RtD build.
+
 To select only local checks during development, use
 `pytest -m "not integration"` and
 `ctest --test-dir build/native -LE integration`.
