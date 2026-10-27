@@ -29,6 +29,8 @@ releases may include breaking changes.
 
 ### Fixed
 
+- 🐛 Limit concurrent cloud tests across CI runs to respect EMU_FREE capacity
+  ([#9]) ([**@burgholzer**]).
 - 🐛 Use GitHub CI for credentialed PR documentation builds ([#5])
   ([**@burgholzer**]).
 - 🐛 Propagate Windows macro protection to native unit tests ([#5])
@@ -43,6 +45,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#9]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/9
 [#5]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/5
 [#3]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/3
 [#2]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/2

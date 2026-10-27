@@ -64,6 +64,10 @@ jobs:
 
   documentation:
     name: 📚 Documentation
+    # Share the Linux x86 slot so docs cannot add a fifth concurrent cloud batch.
+    concurrency:
+      group: pasqal-emu-free-ubuntu-26.04
+      queue: max
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.event.pull_request.base.repo.id
     runs-on: ubuntu-26.04
     steps:

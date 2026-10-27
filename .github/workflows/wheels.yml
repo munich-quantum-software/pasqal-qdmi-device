@@ -22,6 +22,10 @@ jobs:
   build-wheel:
     name: 🎡 ${{ inputs.runs-on }}
     runs-on: ${{ inputs.runs-on }}
+    # Four platform slots keep two-program batches below the EMU_FREE limit.
+    concurrency:
+      group: pasqal-emu-free-${{ inputs.runs-on }}
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
