@@ -1,0 +1,69 @@
+name: 📈 Coverage
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: 📈 Coverage
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      CTEST_PARALLEL_LEVEL: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.14"
+          enable-cache: false
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
+      - name: Configure
+        run: cmake -S . -B build/coverage -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+      - name: Build
+        run: cmake --build build/coverage --config Debug
+      - name: Test native package offline
+        run: ctest --test-dir build/coverage -C Debug -LE integration --output-on-failure --timeout 600
+      - name: Test Python package with native instrumentation
+        env:
+          CMAKE_ARGS: -DENABLE_COVERAGE=ON
+          SKBUILD_CMAKE_BUILD_TYPE: Debug
+          UV_NO_CACHE: "1"
+        run: >-
+          uvx nox -s tests-3.14 -- -m "not integration"
+          --cov=pasqal.qdmi --cov-report=xml:build/python-coverage/coverage.xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage
+          path: |
+            build/**/*.gcda
+            build/**/*.gcno
+            build/python-coverage/coverage.xml
+          if-no-files-found: error
+      - name: Upload native coverage
+        if: vars.CODECOV_ENABLED == 'true'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          fail_ci_if_error: true
+          flags: cpp
+          use_oidc: true
+          exclude: python-coverage
+          plugins: gcov
+      - name: Upload Python coverage
+        if: vars.CODECOV_ENABLED == 'true'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          fail_ci_if_error: true
+          flags: python
+          files: build/python-coverage/coverage.xml
+          disable_search: true
+          plugins: noop
+          use_oidc: true

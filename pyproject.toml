@@ -245,3 +245,7 @@ markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
 minversion = "9.1"
 strict = true
 testpaths = [ "test/python" ]
+
+
+[tool.coverage.run]
+source = [ "pasqal.qdmi" ]

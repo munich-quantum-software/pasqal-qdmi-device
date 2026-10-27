@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cpr/connection_pool.h>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -42,9 +43,11 @@ inline constexpr std::string_view DEFAULT_AUTH_ENDPOINT =
 /// Raised when an HTTP request fails; `status` is 0 for transport errors.
 class CloudError : public std::runtime_error {
 public:
+  // CPR uses long for HTTP status codes.
+  // NOLINTNEXTLINE(google-runtime-int)
   CloudError(long http_status, const std::string& message)
       : std::runtime_error(message), status(http_status) {}
-  long status;
+  long status; // NOLINT(google-runtime-int)
 };
 
 /// Raised when credentials are missing or rejected.
@@ -68,11 +71,18 @@ public:
 using Deadline = std::optional<std::chrono::steady_clock::time_point>;
 
 /// State of a Pasqal Cloud job.
-enum class JobState { Pending, Running, Canceling, Done, Canceled, Error };
+enum class JobState : std::uint8_t {
+  Pending,
+  Running,
+  Canceling,
+  Done,
+  Canceled,
+  Error,
+};
 
 struct CloudJob {
   std::string batch_id;
-  JobState state;
+  JobState state = JobState::Pending;
   std::optional<std::size_t> runs;
   std::optional<std::string> sequence;
 };
@@ -99,7 +109,7 @@ bool is_cloud_id(std::string_view id);
 
 /// Return whether `token` is usable at `now` (Unix seconds): non-empty and not
 /// within 10 s of its JWT expiry. Tokens without a JWT expiry are usable.
-bool is_token_usable(const std::string& token, long long now);
+bool is_token_usable(const std::string& token, std::int64_t now);
 
 /// Serialize calls on one client; independent clients may run in parallel.
 class CloudClient {

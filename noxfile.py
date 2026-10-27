@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import tempfile
 from pathlib import Path
 
 import nox
@@ -92,6 +93,33 @@ def native(session: nox.Session) -> None:
         "--timeout",
         "600",
     )
+
+
+@nox.session(python=PYTHON_ALL_VERSIONS, reuse_venv=True, default=True)
+def minimums(session: nox.Session) -> None:
+    """Test minimum dependency versions against local HTTP fixtures."""
+    env = {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
+    with tempfile.TemporaryDirectory() as temp_dir:
+        lockfile = Path(temp_dir) / "uv.lock"
+        shutil.move("uv.lock", lockfile)
+        try:
+            session.run(
+                "uv",
+                "run",
+                "--no-dev",
+                "--group",
+                "test",
+                "--resolution=lowest-direct",
+                "pytest",
+                "-m",
+                "not integration",
+                "-Wdefault",
+                *session.posargs,
+                env=env,
+            )
+            session.run("uv", "tree", "--frozen", env=env)
+        finally:
+            shutil.move(lockfile, "uv.lock")
 
 
 @nox.session(python="3.14", reuse_venv=True, default=True)

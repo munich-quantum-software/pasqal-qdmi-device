@@ -85,7 +85,7 @@ struct PASQAL_QDMI_Device_Session_impl_d {
 /// Raw C callers must free jobs before their session; Core retains it
 /// automatically.
 struct PASQAL_QDMI_Device_Job_impl_d {
-  PASQAL_QDMI_Device_Session session;
+  PASQAL_QDMI_Device_Session session = nullptr;
   std::string id;
   bool is_batch = false;
   bool mapping_loaded = false;
