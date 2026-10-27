@@ -59,10 +59,11 @@ fresh execution submits one small EMU_FREE batch.
 
 Import the project into Read the Docs with `.readthedocs.yaml`, add the three
 private environment variables, and build the default branch. RtD uses Python
-3.14 and the same Nox command. Leave RtD pull-request previews disabled: private
-variables are unavailable to those builds. Trusted GitHub CI builds the actual
-notebooks for same-repository pull requests. Inspect rendered pages with Chrome
-DevTools after layout changes.
+3.14 and the same Nox command. RtD pull-request builds are skipped because
+private variables are unavailable there. Trusted GitHub CI executes the
+notebooks for same-repository pull requests and uploads the `documentation` HTML
+artifact for review. Inspect rendered pages with Chrome DevTools after layout
+changes.
 
 ## Releases
 
@@ -70,8 +71,8 @@ Update the version in `pyproject.toml` and `CMakeLists.txt`, and move the
 changelog's unreleased entries into a dated release section. Validate the final
 built wheels before tagging a release. The release workflow builds the source
 distribution and platform wheels; PyPI publishing uses the `pypi` environment
-and trusted publishing. Publication remains disabled while the repository is
-private.
+and trusted publishing. Publishing a GitHub release triggers the PyPI upload;
+manual workflow runs only build and test the artifacts.
 
 ## Licensing
 
