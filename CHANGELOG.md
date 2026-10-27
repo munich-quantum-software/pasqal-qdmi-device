@@ -30,6 +30,8 @@ releases may include breaking changes.
 
 ### Fixed
 
+- 🐛 Use GitHub CI for credentialed PR documentation builds ([#5])
+  ([**@burgholzer**]).
 - 🐛 Propagate Windows macro protection to native unit tests ([#5])
   ([**@burgholzer**]).
 - 🐛 Enable publishing from public GitHub releases ([#5]) ([**@burgholzer**]).

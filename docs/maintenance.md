@@ -59,10 +59,11 @@ fresh execution submits one small EMU_FREE batch.
 
 Import the project into Read the Docs with `.readthedocs.yaml`, add the three
 private environment variables, and build the default branch. RtD uses Python
-3.14 and the same Nox command. Leave RtD pull-request previews disabled: private
-variables are unavailable to those builds. Trusted GitHub CI builds the actual
-notebooks for same-repository pull requests. Inspect rendered pages with Chrome
-DevTools after layout changes.
+3.14 and the same Nox command. RtD pull-request builds are skipped because
+private variables are unavailable there. Trusted GitHub CI executes the
+notebooks for same-repository pull requests and uploads the `documentation` HTML
+artifact for review. Inspect rendered pages with Chrome DevTools after layout
+changes.
 
 ## Releases
 
