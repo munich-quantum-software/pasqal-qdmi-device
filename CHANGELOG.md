@@ -10,14 +10,41 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-27
+
 ### Added
 
-- ✨ Add a Pulser remote connection for `QPUBackend` ([**@awennersteen**]).
+- ✨ Add a Pulser remote connection for `QPUBackend` ([#2])
+  ([**@awennersteen**]).
 - 🎉 Initial commit ([**@awennersteen**], [**@burgholzer**]).
+
+### Changed
+
+- ⚡️ Serialize repeated concrete Pulser sequences once per batch ([#3])
+  ([**@burgholzer**]).
+- ⚡️ Avoid rescanning batches during indexed status and result reads ([#3])
+  ([**@burgholzer**]).
+- ⬆️ Require uv 0.13.4 for development ([#1]) ([**@denialhaag**]).
+
+<!-- Versions -->
+
+[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/compare/v1.0.0...main
+[1.0.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.0.0
+
+<!-- Pull requests -->
+
+[#3]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/3
+[#2]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/2
+[#1]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/1
+
+<!-- Contributors -->
+
+[**@awennersteen**]: https://github.com/awennersteen
+[**@burgholzer**]: https://github.com/burgholzer
+[**@denialhaag**]: https://github.com/denialhaag
+
+<!-- General links -->
 
 [Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
 [Common Changelog]: https://common-changelog.org/
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
-[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/commits/main/
-[**@awennersteen**]: https://github.com/awennersteen
-[**@burgholzer**]: https://github.com/burgholzer

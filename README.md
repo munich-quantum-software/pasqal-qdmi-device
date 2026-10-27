@@ -1,6 +1,6 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)
 ![OS](https://img.shields.io/badge/os-linux%20%7C%20macos%20%7C%20windows-blue?style=flat-square)
-[![License](https://img.shields.io/badge/license-Apache--2.0%20WITH%20LLVM--exception-blue.svg?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20WITH%20LLVM--exception-blue.svg?style=flat-square)](https://github.com/munich-quantum-software/pasqal-qdmi-device/blob/main/LICENSE)
 [![CI](https://img.shields.io/badge/CI-GitHub_Actions-blue?style=flat-square&logo=github)](https://github.com/munich-quantum-software/pasqal-qdmi-device/actions/workflows/ci.yml)
 
 # Pasqal QDMI Device
@@ -19,8 +19,8 @@ API.
 <p align="center">
   <a href="https://www.pasqal.com/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/_static/logo-pasqal-dark.svg">
-      <img src="docs/_static/logo-pasqal-light.svg" width="260" alt="Pasqal">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/munich-quantum-software/pasqal-qdmi-device/refs/heads/main/docs/_static/logo-pasqal-dark.svg">
+      <img src="https://raw.githubusercontent.com/munich-quantum-software/pasqal-qdmi-device/refs/heads/main/docs/_static/logo-pasqal-light.svg" width="260" alt="Pasqal">
     </picture>
   </a>
 </p>
@@ -41,11 +41,10 @@ emulators and quantum processors depends on your Pasqal account and region.
 
 ## Getting Started
 
-Build and install the Python package with the optional Core and Pulser
-integrations:
+Install the Python package with the optional Core and Pulser integrations:
 
 ```console
-uv pip install '.[core,pulser]'
+uv pip install 'pasqal-qdmi[core,pulser]'
 ```
 
 Building from source requires a C++20 compiler, CMake 3.24 or newer, and OpenSSL
@@ -59,19 +58,20 @@ cmake --build build --config Release
 cmake --install build --prefix /path/to/install
 ```
 
-See [installation](docs/installation.md) for wheel installation and platform
-support.
+See
+[installation](https://pasqal-qdmi-device.readthedocs.io/en/stable/installation.html)
+for wheel installation and platform support.
 
 ## Where to Start
 
-| I want to...                                          | Read...                                     |
-| ----------------------------------------------------- | ------------------------------------------- |
-| install the package or build from source              | [Installation](docs/installation.md)        |
-| configure my account and project                      | [Authentication](docs/authentication.md)    |
-| choose a cloud system and understand its capabilities | [Device capabilities](docs/capabilities.md) |
-| submit Pulser sequences and retrieve results          | [Usage](docs/usage.md)                      |
-| diagnose authentication or job failures               | [Troubleshooting](docs/troubleshooting.md)  |
-| develop and test the provider                         | [Development](docs/development.md)          |
+| I want to...                                          | Read...                                                                                      |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| install the package or build from source              | [Installation](https://pasqal-qdmi-device.readthedocs.io/en/stable/installation.html)        |
+| configure my account and project                      | [Authentication](https://pasqal-qdmi-device.readthedocs.io/en/stable/authentication.html)    |
+| choose a cloud system and understand its capabilities | [Device capabilities](https://pasqal-qdmi-device.readthedocs.io/en/stable/capabilities.html) |
+| submit Pulser sequences and retrieve results          | [Usage](https://pasqal-qdmi-device.readthedocs.io/en/stable/usage.html)                      |
+| diagnose authentication or job failures               | [Troubleshooting](https://pasqal-qdmi-device.readthedocs.io/en/stable/troubleshooting.html)  |
+| develop and test the provider                         | [Development](https://pasqal-qdmi-device.readthedocs.io/en/stable/development.html)          |
 
 ## Contributors and Support
 
@@ -85,4 +85,4 @@ for bug reports and feature requests.
 ## License
 
 The project is licensed under the Apache License 2.0 with LLVM exceptions; see
-[LICENSE](LICENSE).
+[LICENSE](https://github.com/munich-quantum-software/pasqal-qdmi-device/blob/main/LICENSE).

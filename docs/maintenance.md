@@ -70,8 +70,8 @@ Update the version in `pyproject.toml` and `CMakeLists.txt`, and move the
 changelog's unreleased entries into a dated release section. Validate the final
 built wheels before tagging a release. The release workflow builds the source
 distribution and platform wheels; PyPI publishing uses the `pypi` environment
-and trusted publishing. Publication remains disabled while the repository is
-private.
+and trusted publishing. Publishing a GitHub release triggers the PyPI upload;
+manual workflow runs only build and test the artifacts.
 
 ## Licensing
 

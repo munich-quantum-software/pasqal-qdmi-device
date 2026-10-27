@@ -3,13 +3,13 @@
 The Python package includes the native library and its device catalogue. It
 requires Python 3.11 or later; MQT Core and Pulser are optional. The full Pulser
 distribution includes the official Pasqal SDK and local simulation support.
-Install from a source checkout with the integrations you need:
+Install the package with the integrations you need:
 
 ```console
-uv pip install '.[core,pulser]'
+uv pip install 'pasqal-qdmi[core,pulser]'
 ```
 
-To build a wheel for another environment:
+To build a wheel from a source checkout:
 
 ```sh
 uv build
