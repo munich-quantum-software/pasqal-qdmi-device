@@ -18,6 +18,7 @@
 
 // Pasqal QDMI device: Pulser sequences on Pasqal Cloud devices and emulators.
 
+#include "pasqal-qdmi-device/Cloud.hpp"
 #include "pasqal-qdmi-device/Device.hpp"
 #include "pasqal_qdmi/device.h"
 
@@ -30,11 +31,17 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <memory>
 #include <new>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <set>
+#include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -92,7 +99,7 @@ std::optional<std::string> read_string(size_t size, const void* value) {
 /// Run `body`, mapping escaping exceptions to QDMI status codes.
 template <typename F> int guarded(F&& body) noexcept {
   try {
-    return body();
+    return std::forward<F>(body)();
   } catch (...) {
     return pasqal::current_exception_status();
   }
@@ -130,7 +137,7 @@ void apply_authfile(PASQAL_QDMI_Device_Session_impl_d& session) {
   for (std::string line; std::getline(file, line);) {
     line = trim(line);
     const auto eq = line.find('=');
-    if (line.empty() || line[0] == '#' || line[0] == ';' ||
+    if (line.empty() || line.front() == '#' || line.front() == ';' ||
         eq == std::string::npos) {
       continue;
     }
@@ -179,31 +186,34 @@ int validate_program(const std::string& source, size_t capacity,
   if (!sequence.is_object() ||
       sequence.value("version", nlohmann::json{}) != "1" ||
       !sequence.contains("device") ||
-      !(sequence["device"].is_object() || sequence["device"].is_string()) ||
-      !sequence.contains("channels") || !sequence["channels"].is_object() ||
-      !sequence.contains("operations") || !sequence["operations"].is_array() ||
-      !sequence.contains("variables") || !sequence["variables"].is_object() ||
-      !sequence.contains("register") || !sequence["register"].is_array() ||
-      sequence["register"].empty()) {
+      !(sequence.at("device").is_object() ||
+        sequence.at("device").is_string()) ||
+      !sequence.contains("channels") || !sequence.at("channels").is_object() ||
+      !sequence.contains("operations") ||
+      !sequence.at("operations").is_array() ||
+      !sequence.contains("variables") ||
+      !sequence.at("variables").is_object() || !sequence.contains("register") ||
+      !sequence.at("register").is_array() || sequence.at("register").empty()) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
-  if (!sequence["variables"].empty() || !sequence.contains("measurement") ||
-      sequence["measurement"].is_null()) {
+  if (!sequence.at("variables").empty() || !sequence.contains("measurement") ||
+      sequence.at("measurement").is_null()) {
     return QDMI_ERROR_NOTSUPPORTED;
   }
-  if (sequence["measurement"] != "ground-rydberg" &&
-      sequence["measurement"] != "digital" && sequence["measurement"] != "XY") {
+  if (sequence.at("measurement") != "ground-rydberg" &&
+      sequence.at("measurement") != "digital" &&
+      sequence.at("measurement") != "XY") {
     return QDMI_ERROR_NOTSUPPORTED;
   }
-  atoms = sequence["register"].size();
+  atoms = sequence.at("register").size();
   if (capacity != 0 && atoms > capacity) {
     return QDMI_ERROR_NOTSUPPORTED;
   }
   std::set<nlohmann::json> names;
-  for (const auto& atom : sequence["register"]) {
+  for (const auto& atom : sequence.at("register")) {
     if (!atom.is_object() || !atom.contains("name") ||
-        !(atom["name"].is_string() || atom["name"].is_number_integer()) ||
-        !names.insert(atom["name"]).second) {
+        !(atom.at("name").is_string() || atom.at("name").is_number_integer()) ||
+        !names.insert(atom.at("name")).second) {
       return QDMI_ERROR_INVALIDARGUMENT;
     }
     if (!atom.contains("x") || !atom.contains("y")) {
@@ -211,8 +221,9 @@ int validate_program(const std::string& source, size_t capacity,
                                       // by Pulser.
     }
     for (const auto* axis : {"x", "y", "z"}) {
-      if (atom.contains(axis) && (!atom[axis].is_number() ||
-                                  !std::isfinite(atom[axis].get<double>()))) {
+      if (atom.contains(axis) &&
+          (!atom.at(axis).is_number() ||
+           !std::isfinite(atom.at(axis).get<double>()))) {
         return QDMI_ERROR_INVALIDARGUMENT;
       }
     }
@@ -227,14 +238,18 @@ bool is_terminal(QDMI_Job_Status status) {
 
 void update_status(PASQAL_QDMI_Device_Job job) {
   // A batch is terminal only when every program has stopped.
-  for (const auto status : {QDMI_JOB_STATUS_RUNNING, QDMI_JOB_STATUS_QUEUED,
-                            QDMI_JOB_STATUS_SUBMITTED, QDMI_JOB_STATUS_CREATED,
-                            QDMI_JOB_STATUS_FAILED, QDMI_JOB_STATUS_CANCELED,
-                            QDMI_JOB_STATUS_DONE}) {
-    if (std::any_of(job->programs.begin(), job->programs.end(),
-                    [status](const auto& program) {
-                      return program.status == status;
-                    })) {
+  for (const auto status : {
+           QDMI_JOB_STATUS_RUNNING,
+           QDMI_JOB_STATUS_QUEUED,
+           QDMI_JOB_STATUS_SUBMITTED,
+           QDMI_JOB_STATUS_CREATED,
+           QDMI_JOB_STATUS_FAILED,
+           QDMI_JOB_STATUS_CANCELED,
+           QDMI_JOB_STATUS_DONE,
+       }) {
+    if (std::ranges::any_of(job->programs, [status](const auto& program) {
+          return program.status == status;
+        })) {
       job->status = status;
       return;
     }
@@ -255,10 +270,10 @@ void refresh_mapping(PASQAL_QDMI_Device_Job job, pasqal::Deadline deadline) {
     programs.resize(batch.job_ids.size());
   }
   for (size_t i = 0; i < programs.size(); ++i) {
-    programs[i].id = batch.job_ids[i];
-    programs[i].status = QDMI_JOB_STATUS_SUBMITTED;
-    if (!programs[i].source && batch.sequence) {
-      programs[i].source = batch.sequence;
+    programs.at(i).id = batch.job_ids.at(i);
+    programs.at(i).status = QDMI_JOB_STATUS_SUBMITTED;
+    if (!programs.at(i).source && batch.sequence) {
+      programs.at(i).source = batch.sequence;
     }
   }
   job->programs = std::move(programs);
@@ -341,10 +356,10 @@ int check_job(PASQAL_QDMI_Device_Job job,
     }
     if (job->submission_attempted && !job->programs.empty()) {
       const auto common = job->programs.front().runs;
-      job->shots = std::all_of(job->programs.begin(), job->programs.end(),
-                               [common](const auto& program) {
-                                 return program.runs == common;
-                               })
+      job->shots = std::ranges::all_of(job->programs,
+                                       [common](const auto& program) {
+                                         return program.runs == common;
+                                       })
                        ? common
                        : std::nullopt;
     }
@@ -356,7 +371,7 @@ int check_job(PASQAL_QDMI_Device_Job job,
 int check_program(PASQAL_QDMI_Device_Job job, size_t index) {
   return guarded([&]() -> int {
     refresh_mapping(job, std::nullopt);
-    refresh_program(job, job->programs[index], std::nullopt);
+    refresh_program(job, job->programs.at(index), std::nullopt);
     return QDMI_SUCCESS;
   });
 }
@@ -450,6 +465,8 @@ int PASQAL_QDMI_device_session_alloc(PASQAL_QDMI_Device_Session* session) {
     return QDMI_ERROR_INVALIDARGUMENT;
   }
   return guarded([session]() -> int {
+    // The C ABI transfers ownership to the caller.
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     *session = new PASQAL_QDMI_Device_Session_impl_d();
     return QDMI_SUCCESS;
   });
@@ -521,13 +538,15 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
   return guarded([session]() -> int {
     apply_authfile(*session);
     const auto backend = session->backend_name();
-    pasqal::CloudConfig config{.device_type = backend,
-                               .project_id = session->project_id.value_or(""),
-                               .token = session->token,
-                               .username = session->username,
-                               .password = session->password,
-                               .client_id = session->client_id,
-                               .client_secret = session->client_secret};
+    pasqal::CloudConfig config{
+        .device_type = backend,
+        .project_id = session->project_id.value_or(""),
+        .token = session->token,
+        .username = session->username,
+        .password = session->password,
+        .client_id = session->client_id,
+        .client_secret = session->client_secret,
+    };
     if (session->base_url) {
       config.base_url = *session->base_url;
     }
@@ -546,6 +565,8 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
 }
 
 void PASQAL_QDMI_device_session_free(PASQAL_QDMI_Device_Session session) {
+  // Release the handle allocated by the C ABI.
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   delete session;
 }
 
@@ -597,7 +618,8 @@ int PASQAL_QDMI_device_session_query_device_property(
 
 int PASQAL_QDMI_device_session_query_site_property(
     PASQAL_QDMI_Device_Session session, PASQAL_QDMI_Site site,
-    QDMI_Site_Property prop, size_t size, void* value, size_t* size_ret) {
+    QDMI_Site_Property prop, size_t /*size*/, void* /*value*/,
+    size_t* /*size_ret*/) {
   if (session == nullptr || site == nullptr ||
       QDMI_IS_INVALID_ENUM_VALUE(prop, QDMI_SITE_PROPERTY)) {
     return QDMI_ERROR_INVALIDARGUMENT;
@@ -606,17 +628,14 @@ int PASQAL_QDMI_device_session_query_site_property(
     return QDMI_ERROR_BADSTATE;
   }
   // This backend exposes no device-global site handles.
-  (void)size;
-  (void)value;
-  (void)size_ret;
   return QDMI_ERROR_INVALIDARGUMENT;
 }
 
 int PASQAL_QDMI_device_session_query_operation_property(
     PASQAL_QDMI_Device_Session session, PASQAL_QDMI_Operation operation,
     size_t num_sites, const PASQAL_QDMI_Site* sites, size_t num_params,
-    const double* params, QDMI_Operation_Property prop, size_t size,
-    void* value, size_t* size_ret) {
+    const double* params, QDMI_Operation_Property prop, size_t /*size*/,
+    void* /*value*/, size_t* /*size_ret*/) {
   if (session == nullptr || operation == nullptr ||
       (num_sites > 0 && sites == nullptr) ||
       (num_params > 0 && params == nullptr) ||
@@ -627,9 +646,6 @@ int PASQAL_QDMI_device_session_query_operation_property(
     return QDMI_ERROR_BADSTATE;
   }
   // This backend exposes no gate or operation handles.
-  (void)size;
-  (void)value;
-  (void)size_ret;
   return QDMI_ERROR_INVALIDARGUMENT;
 }
 
@@ -642,6 +658,8 @@ int PASQAL_QDMI_device_session_create_device_job(
     return QDMI_ERROR_BADSTATE;
   }
   return guarded([&]() -> int {
+    // The C ABI transfers ownership to the caller.
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     *job = new PASQAL_QDMI_Device_Job_impl_d();
     (*job)->session = session;
     return QDMI_SUCCESS;
@@ -775,7 +793,7 @@ int PASQAL_QDMI_device_job_get_program(PASQAL_QDMI_Device_Job job,
   if (program_index >= job->programs.size()) {
     return QDMI_ERROR_OUTOFRANGE;
   }
-  const auto& source = job->programs[program_index].source;
+  const auto& source = job->programs.at(program_index).source;
   return source ? copy_str(*source, size, data, size_ret)
                 : QDMI_ERROR_NOTSUPPORTED;
 }
@@ -794,7 +812,7 @@ int PASQAL_QDMI_device_job_get_program_status(PASQAL_QDMI_Device_Job job,
   }
   const auto code = check_program(job, program_index);
   if (code == QDMI_SUCCESS) {
-    *status = job->programs[program_index].status;
+    *status = job->programs.at(program_index).status;
   }
   return code;
 }
@@ -819,8 +837,9 @@ int PASQAL_QDMI_device_job_query_property(PASQAL_QDMI_Device_Job job,
       if (job->programs.empty()) {
         return QDMI_ERROR_BADSTATE;
       }
-      return std::any_of(job->programs.begin(), job->programs.end(),
-                         [](const auto& program) { return !program.source; })
+      return std::ranges::any_of(
+                 job->programs,
+                 [](const auto& program) { return !program.source; })
                  ? QDMI_ERROR_NOTSUPPORTED
                  : copy_value(QDMI_PROGRAM_FORMAT_CUSTOM1, size, value,
                               size_ret);
@@ -991,7 +1010,7 @@ int PASQAL_QDMI_device_job_get_results(PASQAL_QDMI_Device_Job job,
       code != QDMI_SUCCESS) {
     return code;
   }
-  const auto& program = job->programs[program_index];
+  const auto& program = job->programs.at(program_index);
   if (program.status != QDMI_JOB_STATUS_DONE || !program.results) {
     return QDMI_ERROR_BADSTATE;
   }
@@ -1007,4 +1026,8 @@ int PASQAL_QDMI_device_job_get_results(PASQAL_QDMI_Device_Job job,
   }
 }
 
-void PASQAL_QDMI_device_job_free(PASQAL_QDMI_Device_Job job) { delete job; }
+void PASQAL_QDMI_device_job_free(PASQAL_QDMI_Device_Job job) {
+  // Release the handle allocated by the C ABI.
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  delete job;
+}

@@ -22,23 +22,39 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cpr/connection_pool.h>
+#include <cpr/error.h>
+#include <cpr/payload.h>
+#include <cpr/response.h>
 #include <cpr/session.h>
+#include <cpr/ssl_options.h>
 #include <cstdint>
 #include <cstdlib>
+#include <curl/curl.h>
 #include <curl/urlapi.h>
-#include <fstream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
+
+#ifdef __linux__
+#include <fstream>
+#endif
 
 namespace pasqal {
 namespace {
 
-using json = nlohmann::json;
+using nlohmann::json;
 
-constexpr long long TOKEN_EXPIRY_GRACE_SECONDS = 10;
+constexpr std::int64_t TOKEN_EXPIRY_GRACE_SECONDS = 10;
 constexpr auto AUTH_GRANT_TYPE =
     "http://auth0.com/oauth/grant-type/password-realm";
 constexpr auto AUTH_REALM = "pcs-users";
@@ -49,7 +65,7 @@ constexpr std::chrono::seconds CONNECT_TIMEOUT{10};
 
 std::string upper(std::string_view text) {
   std::string out(text);
-  std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) {
+  std::ranges::transform(out, out.begin(), [](unsigned char c) {
     return static_cast<char>(std::toupper(c));
   });
   return out;
@@ -152,9 +168,12 @@ std::string ca_bundle() {
     }
   }
 #ifdef __linux__
-  for (const auto* bundle : {"/etc/ssl/certs/ca-certificates.crt",
-                             "/etc/pki/tls/certs/ca-bundle.crt",
-                             "/etc/ssl/ca-bundle.pem", "/etc/ssl/cert.pem"}) {
+  for (const auto* bundle : {
+           "/etc/ssl/certs/ca-certificates.crt",
+           "/etc/pki/tls/certs/ca-bundle.crt",
+           "/etc/ssl/ca-bundle.pem",
+           "/etc/ssl/cert.pem",
+       }) {
     if (const std::ifstream file{bundle}; file.good()) {
       return bundle;
     }
@@ -200,7 +219,7 @@ std::string checked(cpr::Response&& response) {
                      "cloud HTTP status " +
                          std::to_string(response.status_code));
   }
-  return std::move(response.text);
+  return std::move(response).text;
 }
 
 std::optional<std::string> base64url_decode(std::string_view text) {
@@ -246,7 +265,7 @@ json token_claims(std::string_view token) {
                  : json(json::value_t::discarded);
 }
 
-long long now_unix_seconds() {
+std::int64_t now_unix_seconds() {
   return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::system_clock::now().time_since_epoch())
       .count();
@@ -277,13 +296,13 @@ JobState parse_state(const std::string& state) {
 } // namespace
 
 bool is_cloud_id(std::string_view id) {
-  return !id.empty() && std::all_of(id.begin(), id.end(), [](unsigned char c) {
+  return !id.empty() && std::ranges::all_of(id, [](unsigned char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
            (c >= '0' && c <= '9') || c == '_' || c == '-';
   });
 }
 
-bool is_token_usable(const std::string& token, long long now) {
+bool is_token_usable(const std::string& token, std::int64_t now) {
   if (token.empty()) {
     return false;
   }
@@ -297,7 +316,7 @@ bool is_token_usable(const std::string& token, long long now) {
   if (!claims.contains("exp")) {
     return true;
   }
-  const auto& expiry = claims["exp"];
+  const auto& expiry = claims.at("exp");
   return expiry.is_number() && std::isfinite(expiry.get<double>()) &&
          expiry.get<double>() - TOKEN_EXPIRY_GRACE_SECONDS >
              static_cast<double>(now);
@@ -440,8 +459,10 @@ std::string CloudClient::device_spec_entries(bool is_emulator) {
   for (const auto& entry : entries) {
     const auto device_type = string_field(entry, "device_type");
     if (is_emulator || upper(device_type) == config_.device_type) {
-      kept.push_back({{"device_type", device_type},
-                      {"specs", string_field(entry, "specs")}});
+      kept.push_back({
+          {"device_type", device_type},
+          {"specs", string_field(entry, "specs")},
+      });
     }
   }
   return kept.dump();
@@ -487,11 +508,13 @@ CloudClient::submit_batch(const std::vector<std::string_view>& sequences,
   for (const auto& sequence : sequences) {
     jobs.push_back({{"sequence", sequence}, {"runs", runs}});
   }
-  const json body{{"sequence_builder", nullptr},
-                  {"jobs", std::move(jobs)},
-                  {"open", false},
-                  {"device_type", config_.device_type},
-                  {"project_id", config_.project_id}};
+  const json body{
+      {"sequence_builder", nullptr},
+      {"jobs", std::move(jobs)},
+      {"open", false},
+      {"device_type", config_.device_type},
+      {"project_id", config_.project_id},
+  };
   const auto response =
       parse_json(post("/core-fast/api/v1/batches", body.dump()));
   const auto& data = field(response, "data");

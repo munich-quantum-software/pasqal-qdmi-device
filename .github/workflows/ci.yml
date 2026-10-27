@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  native:
+  cpp-tests:
     name: 🇨 Test
     strategy:
       fail-fast: false
@@ -48,7 +48,31 @@ jobs:
         if: ${{ !matrix.sanitizers }}
         run: cmake -P test/install.cmake
 
-  lint:
+  cpp-linter:
+    name: 🇨 Lint
+    uses: $/.github/workflows/cpp-linter.yml
+    with:
+      files-changed-only: true
+    permissions:
+      contents: read
+      pull-requests: write
+
+  python-minimums:
+    name: 🐍 Test with minimum versions
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.14"
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
+      - name: Test minimum dependency versions
+        run: uvx nox -s minimums
+
+  python-linter:
     name: 🐍 Lint
     runs-on: ubuntu-26.04
     steps:
@@ -61,6 +85,13 @@ jobs:
           python-version: "3.14"
       - name: Run pre-commit checks
         run: uvx nox -s lint
+
+  coverage:
+    name: 📈 Coverage
+    uses: $/.github/workflows/coverage.yml
+    permissions:
+      contents: read
+      id-token: write
 
   documentation:
     name: 📚 Documentation
@@ -114,7 +145,17 @@ jobs:
   required-checks-pass:
     name: 🚦 Check
     if: always()
-    needs: [native, lint, documentation, build-sdist, build-wheel]
+    needs:
+      [
+        cpp-tests,
+        cpp-linter,
+        python-minimums,
+        python-linter,
+        coverage,
+        documentation,
+        build-sdist,
+        build-wheel,
+      ]
     runs-on: ubuntu-slim
     steps:
       - name: Decide whether the needed jobs succeeded or failed

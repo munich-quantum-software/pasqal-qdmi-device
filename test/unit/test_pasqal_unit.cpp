@@ -16,12 +16,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include "pasqal-qdmi-device/Cloud.hpp"
 #include "pasqal-qdmi-device/Device.hpp"
+#include "pasqal_qdmi/constants.h"
+#include "pasqal_qdmi/device.h"
+#include "pasqal_qdmi/types.h"
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <exception>
 #include <gtest/gtest.h>
 #include <limits>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -69,9 +81,9 @@ int set_programs(PASQAL_QDMI_Device_Job job,
                                              data.data());
 }
 
-const std::string ONE_ATOM =
+constexpr auto* ONE_ATOM =
     R"({"version":"1","device":{},"channels":{},"variables":{},"operations":[],"measurement":"ground-rydberg","register":[{"name":"right","x":0,"y":0}]})";
-const std::string TWO_ATOMS =
+constexpr auto* TWO_ATOMS =
     R"({"version":"1","device":{},"channels":{},"variables":{},"operations":[],"measurement":"ground-rydberg","register":[{"name":"right","x":0,"y":0},{"name":"ancilla-7","x":5,"y":0}]})";
 
 class ProgramListTest : public ::testing::Test {
@@ -206,7 +218,7 @@ TEST(Session, EmptyTopologyLeavesOutputBuffersUntouched) {
 TEST(Cloud, ErrorsMapToQdmiStatus) {
   const auto status_of = [](auto error) {
     try {
-      throw error;
+      throw std::move(error);
     } catch (...) {
       return pasqal::current_exception_status();
     }
@@ -289,8 +301,8 @@ TEST_F(ProgramListTest, CopiesAndReplacesProgramsAtomically) {
 }
 
 TEST_F(ProgramListTest, RejectsInvalidProgramText) {
-  const void* data = ONE_ATOM.c_str();
-  size_t size = ONE_ATOM.size();
+  const void* data = ONE_ATOM;
+  size_t size = std::strlen(ONE_ATOM);
   EXPECT_EQ(PASQAL_QDMI_device_job_set_programs(
                 job, QDMI_PROGRAM_FORMAT_CUSTOM1, 1, &size, &data),
             QDMI_ERROR_INVALIDARGUMENT);
@@ -314,16 +326,16 @@ TEST_F(ProgramListTest, RejectsIncompleteOrUnbuiltPulserEnvelopesAtomically) {
     EXPECT_EQ(source(0), ONE_ATOM);
   }
   auto program = nlohmann::json::parse(TWO_ATOMS);
-  program["measurement"] = nullptr;
+  program.at("measurement") = nullptr;
   EXPECT_EQ(set_programs(job, {program.dump()}), QDMI_ERROR_NOTSUPPORTED);
-  program["measurement"] = "ground-rydberg";
-  program["variables"] = {{"t", {{"type", "int"}, {"value", {4}}}}};
+  program.at("measurement") = "ground-rydberg";
+  program.at("variables") = {{"t", {{"type", "int"}, {"value", {4}}}}};
   EXPECT_EQ(set_programs(job, {program.dump()}), QDMI_ERROR_NOTSUPPORTED);
-  program["variables"] = nlohmann::json::object();
-  program["register"][1]["name"] = "right";
+  program.at("variables") = nlohmann::json::object();
+  program.at("register").at(1).at("name") = "right";
   EXPECT_EQ(set_programs(job, {program.dump()}), QDMI_ERROR_INVALIDARGUMENT);
-  program["register"][1]["name"] = "different";
-  program["register"][1].erase("x");
+  program.at("register").at(1).at("name") = "different";
+  program.at("register").at(1).erase("x");
   EXPECT_EQ(set_programs(job, {program.dump()}), QDMI_ERROR_NOTSUPPORTED);
   EXPECT_EQ(source(0), ONE_ATOM);
 }
@@ -333,7 +345,7 @@ TEST_F(ProgramListTest, BufferSizesAndFailureOutputsAreBounded) {
   size_t size = 0;
   ASSERT_EQ(PASQAL_QDMI_device_job_get_program(job, 0, 999, nullptr, &size),
             QDMI_SUCCESS);
-  EXPECT_EQ(size, TWO_ATOMS.size() + 1);
+  EXPECT_EQ(size, std::strlen(TWO_ATOMS) + 1);
   std::vector<char> buffer(size + 2, '#');
   EXPECT_EQ(PASQAL_QDMI_device_job_get_program(job, 0, size - 1, buffer.data(),
                                                nullptr),
@@ -342,10 +354,10 @@ TEST_F(ProgramListTest, BufferSizesAndFailureOutputsAreBounded) {
   ASSERT_EQ(
       PASQAL_QDMI_device_job_get_program(job, 0, size, buffer.data(), nullptr),
       QDMI_SUCCESS);
-  EXPECT_EQ(buffer[size - 1], '\0');
-  EXPECT_EQ(buffer[size], '#');
-  job->programs[0].status = QDMI_JOB_STATUS_DONE;
-  job->programs[0].results = pasqal::Histogram{"10", {7}};
+  EXPECT_EQ(buffer.at(size - 1), '\0');
+  EXPECT_EQ(buffer.at(size), '#');
+  job->programs.at(0).status = QDMI_JOB_STATUS_DONE;
+  job->programs.at(0).results = pasqal::Histogram{.keys = "10", .values = {7}};
   size_t count = 42;
   EXPECT_EQ(
       PASQAL_QDMI_device_job_get_results(job, 0, QDMI_JOB_RESULT_HIST_VALUES,
@@ -384,7 +396,7 @@ TEST_F(ProgramListTest, CancelsAllUnsubmittedPrograms) {
 }
 
 TEST(Specs, UsesSelectedBackendCapacityAndAvailability) {
-  const auto metadata =
+  const auto* const metadata =
       R"({"max_atom_num":12,"status":"UP","active":true,"availability":"ACTIVE","is_emulator":true})";
   const auto specs = pasqal::DeviceSpecs::from_metadata("EMU_FREE", metadata);
   EXPECT_EQ(specs.qubits_num, 12U);
@@ -420,13 +432,13 @@ TEST_F(ProgramListTest, ChecksDoNotChangeUnsubmittedParameters) {
 }
 
 TEST_F(ProgramListTest, CopiesInputAndRejectsOverCapacityWithoutChangingIt) {
-  auto mutable_program = ONE_ATOM;
+  std::string mutable_program = ONE_ATOM;
   ASSERT_EQ(set_programs(job, {mutable_program}), QDMI_SUCCESS);
-  mutable_program[0] = '!';
+  mutable_program.at(0) = '!';
   EXPECT_EQ(source(0), ONE_ATOM);
   auto sequence = nlohmann::json::parse(TWO_ATOMS);
   for (size_t i = 2; i < 5; ++i) {
-    sequence["register"].push_back({{"name", i}, {"x", i * 5}, {"y", 0}});
+    sequence.at("register").push_back({{"name", i}, {"x", i * 5}, {"y", 0}});
   }
   EXPECT_EQ(set_programs(job, {sequence.dump()}), QDMI_ERROR_NOTSUPPORTED);
   EXPECT_EQ(source(0), ONE_ATOM);
