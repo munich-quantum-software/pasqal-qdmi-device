@@ -30,6 +30,11 @@ To select only local checks during development, use
 `pytest -m "not integration"` and
 `ctest --test-dir build/native -LE integration`.
 
+For branch protection, require the GitHub Actions `🚦 Check` status from CI. It
+aggregates native tests, lint, documentation and source/wheel packaging,
+allowing only the intentional documentation skip on fork pull requests. Keep
+separately required external checks, such as pre-commit.ci and Read the Docs.
+
 ## Credentials
 
 Set the same three values in each environment:

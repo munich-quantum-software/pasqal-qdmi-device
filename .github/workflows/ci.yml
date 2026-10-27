@@ -112,7 +112,7 @@ jobs:
 
   # This job provides the required branch protection check.
   required-checks-pass:
-    name: Required checks
+    name: 🚦 Check
     if: always()
     needs: [native, lint, documentation, build-sdist, build-wheel]
     runs-on: ubuntu-slim
