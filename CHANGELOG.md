@@ -20,11 +20,19 @@ releases may include breaking changes.
 
 ### Changed
 
+- 📚 Document installation from PyPI and link to the hosted documentation ([#5])
+  ([**@burgholzer**]).
 - ⚡️ Serialize repeated concrete Pulser sequences once per batch ([#3])
   ([**@burgholzer**]).
 - ⚡️ Avoid rescanning batches during indexed status and result reads ([#3])
   ([**@burgholzer**]).
 - ⬆️ Require uv 0.13.4 for development ([#1]) ([**@denialhaag**]).
+
+### Fixed
+
+- 🐛 Propagate Windows macro protection to native unit tests ([#5])
+  ([**@burgholzer**]).
+- 🐛 Enable publishing from public GitHub releases ([#5]) ([**@burgholzer**]).
 
 <!-- Versions -->
 
@@ -33,6 +41,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#5]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/5
 [#3]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/3
 [#2]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/2
 [#1]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/1
