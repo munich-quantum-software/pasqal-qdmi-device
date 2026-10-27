@@ -31,9 +31,7 @@ jobs:
 
   deploy:
     name: 🚀 Deploy to PyPI
-    if: >-
-      github.event_name == 'release' && github.event.action == 'published' &&
-      !github.event.repository.private
+    if: github.event_name == 'release' && github.event.action == 'published'
     needs: [build-sdist, build-wheel]
     runs-on: ubuntu-26.04
     environment:

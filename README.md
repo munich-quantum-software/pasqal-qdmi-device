@@ -1,7 +1,8 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)
 ![OS](https://img.shields.io/badge/os-linux%20%7C%20macos%20%7C%20windows-blue?style=flat-square)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20WITH%20LLVM--exception-blue.svg?style=flat-square)](https://github.com/munich-quantum-software/pasqal-qdmi-device/blob/main/LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-blue?style=flat-square&logo=github)](https://github.com/munich-quantum-software/pasqal-qdmi-device/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/munich-quantum-software/pasqal-qdmi-device/ci.yml?branch=main&style=flat-square&logo=github&label=ci)](https://github.com/munich-quantum-software/pasqal-qdmi-device/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/readthedocs/pasqal-qdmi-device?logo=readthedocs&style=flat-square)](https://pasqal-qdmi-device.readthedocs.io/en/stable/)
 
 # Pasqal QDMI Device
 
@@ -22,6 +23,11 @@ API.
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/munich-quantum-software/pasqal-qdmi-device/refs/heads/main/docs/_static/logo-pasqal-dark.svg">
       <img src="https://raw.githubusercontent.com/munich-quantum-software/pasqal-qdmi-device/refs/heads/main/docs/_static/logo-pasqal-light.svg" width="260" alt="Pasqal">
     </picture>
+  </a>
+</p>
+<p align="center">
+  <a href="https://pasqal-qdmi-device.readthedocs.io/en/stable/">
+  <img width="30%" src="https://img.shields.io/badge/documentation-blue?style=for-the-badge&logo=read%20the%20docs" alt="Documentation" />
   </a>
 </p>
 <!-- rumdl-enable MD033 -->

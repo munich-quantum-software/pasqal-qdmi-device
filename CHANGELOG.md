@@ -16,7 +16,6 @@ releases may include breaking changes.
 
 - ✨ Add a Pulser remote connection for `QPUBackend` ([#2])
   ([**@awennersteen**]).
-- 🎉 Initial commit ([**@awennersteen**], [**@burgholzer**]).
 
 ### Changed
 
@@ -34,7 +33,8 @@ releases may include breaking changes.
   ([**@burgholzer**]).
 - 🐛 Propagate Windows macro protection to native unit tests ([#5])
   ([**@burgholzer**]).
-- 🐛 Enable publishing from public GitHub releases ([#5]) ([**@burgholzer**]).
+- 🐛 Enable PyPI uploads when a GitHub release is published ([#5])
+  ([**@burgholzer**]).
 
 <!-- Versions -->
 
