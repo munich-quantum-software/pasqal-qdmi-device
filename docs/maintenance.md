@@ -76,6 +76,9 @@ changes.
 
 ## Releases
 
+Release Drafter updates the draft GitHub release when changes reach `main`.
+Review its notes against `CHANGELOG.md` before publishing.
+
 Update the version in `pyproject.toml` and `CMakeLists.txt`, and move the
 changelog's unreleased entries into a dated release section. Validate the final
 built wheels before tagging a release. The release workflow builds the source
