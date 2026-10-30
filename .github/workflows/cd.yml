@@ -8,29 +8,25 @@ permissions: {}
 
 jobs:
   build-sdist:
-    name: 🐍 Packaging
+    name: 🚀 CD
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-sdist.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
     permissions:
       contents: read
 
   build-wheel:
-    name: 🐍 Packaging
+    name: 🚀 CD
     strategy:
       fail-fast: false
       matrix:
         runs-on: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-2025]
-    uses: $/.github/workflows/wheels.yml
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@a4b4977405c7685f95e127cdb6db396bbadce787
     with:
       runs-on: ${{ matrix.runs-on }}
-    secrets:
-      PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
-      PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
-      PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
     permissions:
       contents: read
 
   deploy:
-    name: 🚀 Deploy to PyPI
+    name: 🚀 Publish
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: [build-sdist, build-wheel]
     runs-on: ubuntu-26.04

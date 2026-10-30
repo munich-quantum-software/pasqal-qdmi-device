@@ -238,10 +238,10 @@ error-on-warning = true
 
 
 [tool.pytest]
-addopts = [ "-ra", "--numprocesses=auto" ]
+addopts = [ "-m", "not live", "-ra", "--numprocesses=auto" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
-markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
+markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE", "live: explicit provider access" ]
 minversion = "9.1"
 strict = true
 testpaths = [ "test/python" ]

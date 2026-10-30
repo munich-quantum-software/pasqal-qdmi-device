@@ -32,9 +32,10 @@ release and documentation setup.
   formatting, lint, typing and license-header checks.
 - Keep exploratory scripts, machine setup and task reports outside the checkout.
   Never print or commit credentials or authentication responses.
-- Ordinary tests and documentation use EMU_FREE, the free cloud emulator. Keep
-  workloads small and waits bounded. Local HTTP fixtures test failures. Other
-  emulators may be billed; hardware and paid execution need authorization.
+- Explicit live tests and notebook execution use EMU_FREE, the free cloud
+  emulator. Keep workloads small and waits bounded. Local HTTP fixtures test
+  failures. Other emulators may be billed; hardware and paid execution need
+  authorization.
 - Use signed, gitmoji-led commits. Preserve human attribution; record AI
   assistance with `Assisted-by`, never `Co-authored-by`. Follow the development
   policy for pull requests.
