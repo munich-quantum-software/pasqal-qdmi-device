@@ -33,7 +33,6 @@ from pasqal_cloud.pasqal_cloud_client import PasqalCloudClient
 
 
 @pytest.mark.live
-@pytest.mark.integration
 def test_cloud_submission_and_retrieval(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check real batching, atom order, ownership and fresh-session SDK parity."""
     device = builtin_driver.open_device("pasqal.emu-free")

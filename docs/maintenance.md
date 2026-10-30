@@ -14,18 +14,16 @@ cmake -P test/install.cmake
 ```
 
 The `debug`, `coverage`, `lint` and Linux `sanitizers` presets use separate
-build directories. Native test presets exclude the `integration` label. Python
-tests and minimum-version sessions exclude `live` tests, including in a
-credentialed shell. CI runs native tests on Linux, macOS and Windows, with
-Python tests and minimums in a separate Linux job. Wheel and release builds test
-local fixtures.
+build directories. Native test presets exclude the `live` label. Python tests
+and minimum-version sessions exclude `live` tests, including in a credentialed
+shell. CI runs native tests on Linux, macOS and Windows, with Python tests and
+minimums in a separate Linux job. Wheel and release builds test local fixtures.
 
 Trusted CI calls `reusable-live-tests.yml` after offline native, Python and
-wheel checks. It queries EMU_FREE metadata, runs one Python batch of two
-three-atom, 100-shot programs, and executes the documentation example. The test
-verifies that the selected backend is an unbilled emulator before submitting.
-Fork PRs skip this workflow. Test and documentation batches share the Linux
-EMU_FREE concurrency slot across runs.
+wheel checks. It queries EMU_FREE metadata and runs one Python batch of two
+three-atom, 100-shot programs. The test verifies that the selected backend is an
+unbilled emulator before submitting. Fork PRs skip this workflow. Live tests use
+the Linux EMU_FREE concurrency slot across runs.
 
 For an explicitly intended free-cloud check, configure the credentials below and
 use `uvx nox -s live-tests`. Keep hardware and billed emulators outside this
@@ -69,8 +67,8 @@ credentials. A fresh execution submits one small EMU_FREE batch.
 
 Read the Docs builds the default branch and pull requests with
 `.readthedocs.yaml`, Python 3.14 and the same Nox command. These builds need no
-cloud credentials. The reusable live workflow executes notebooks for trusted
-changes. Inspect rendered pages with Chrome DevTools after layout changes.
+cloud credentials. Notebook execution is a local opt-in. Inspect rendered pages
+with Chrome DevTools after layout changes.
 
 ## Releases
 

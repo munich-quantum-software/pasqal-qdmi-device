@@ -241,7 +241,6 @@ addopts = [ "-m", "not live", "-ra", "--numprocesses=auto" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
 markers = [
-  "integration: submits bounded jobs to Pasqal EMU_FREE",
   "live: explicit provider access",
 ]
 minversion = "9.1"
