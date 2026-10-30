@@ -11,9 +11,6 @@ build:
     - libssl-dev
     - zlib1g-dev
   jobs:
-    post_checkout:
-      # Private credentials are unavailable to PR builds; GitHub CI executes the docs.
-      - if [ "$READTHEDOCS_VERSION_TYPE" = "external" ]; then exit 183; fi
     pre_build:
       - python -m pip install uv
     build:

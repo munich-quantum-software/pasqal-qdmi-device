@@ -153,7 +153,6 @@ build = "cp3*"
 skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
-environment-pass = [ "PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID" ]
 test-command = "pytest test/python"
 test-groups = [ "test" ]
 test-sources = [ "test/python", "pyproject.toml" ]
@@ -241,7 +240,10 @@ error-on-warning = true
 addopts = [ "-m", "not live", "-ra", "--numprocesses=auto" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
-markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE", "live: explicit provider access" ]
+markers = [
+  "integration: submits bounded jobs to Pasqal EMU_FREE",
+  "live: explicit provider access",
+]
 minversion = "9.1"
 strict = true
 testpaths = [ "test/python" ]

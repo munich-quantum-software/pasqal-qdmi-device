@@ -21,7 +21,7 @@
 # dependencies = ["nox"]
 # ///
 
-"""Development checks for the native device and its installed package."""
+"""Python tests, lint and documentation builds."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def _run_tests(session: nox.Session, *, minimums: bool = False, live: bool = Fal
 
 @nox.session(python=PYTHON_ALL_VERSIONS, reuse_venv=True, default=True)
 def minimums(session: nox.Session) -> None:
-    """Test minimum direct dependencies without cloud access."""
+    """Test minimum direct dependency versions."""
     with tempfile.TemporaryDirectory() as directory:
         lockfile = shutil.move("uv.lock", f"{directory}/uv.lock")
         try:
@@ -85,21 +85,10 @@ def minimums(session: nox.Session) -> None:
 
 @nox.session(name="live-tests", python="3.14", reuse_venv=True, default=False)
 def live_tests(session: nox.Session) -> None:
-    """Run the explicitly selected EMU_FREE checks."""
+    """Run the EMU_FREE integration tests."""
     if not all(os.environ.get(name) for name in ("PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID")):
         session.error("EMU_FREE tests require Pasqal credentials")
     _run_tests(session, live=True)
-
-
-@nox.session(venv_backend="none", default=False)
-def native(session: nox.Session) -> None:
-    """Run native checks with a CMake preset (release by default)."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--preset", choices=("release", "debug", "sanitizers"), default="release")
-    args = parser.parse_args(session.posargs)
-    session.run("cmake", "--preset", args.preset)
-    session.run("cmake", "--build", "--preset", args.preset, "--parallel", "2")
-    session.run("ctest", "--preset", args.preset)
 
 
 @nox.session(python="3.14", reuse_venv=True, default=True)

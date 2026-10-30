@@ -9,3 +9,7 @@ __pycache__/
 /docs/_build/
 *.egg-info/
 /.codex/environments/
+*.swp
+*~
+Thumbs.db
+ehthumbs.db

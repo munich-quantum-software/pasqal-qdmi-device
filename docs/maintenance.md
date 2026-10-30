@@ -1,7 +1,8 @@
 # Maintenance
 
-Default tests and documentation builds need no Pasqal credentials. CMake pins
-native dependencies; `uv.lock` records the Python development environment.
+Use CMake presets for native checks and Nox for Python tests and documentation.
+CMake pins native dependencies; `uv.lock` records the Python development
+environment.
 
 ```console
 cmake --preset release
@@ -23,22 +24,22 @@ Trusted CI calls `reusable-live-tests.yml` after offline native, Python and
 wheel checks. It queries EMU_FREE metadata, runs one Python batch of two
 three-atom, 100-shot programs, and executes the documentation example. The test
 verifies that the selected backend is an unbilled emulator before submitting.
-Fork PRs skip this workflow. Test and documentation batches share the existing
-Linux EMU_FREE concurrency slot across runs.
+Fork PRs skip this workflow. Test and documentation batches share the Linux
+EMU_FREE concurrency slot across runs.
 
 For an explicitly intended free-cloud check, configure the credentials below and
 use `uvx nox -s live-tests`. Keep hardware and billed emulators outside this
-workflow. The installed-consumer check remains unchanged.
+workflow.
 
 For branch protection, require the GitHub Actions `🚦 Check` status from CI. It
-aggregates the native, Python, coverage, lint, documentation, packaging and live
-checks, allowing only skips selected by change detection or fork safety. Keep
-separately required external checks, such as pre-commit.ci and Read the Docs.
-Draft Python checks cover 3.14; ready PRs use all supported versions.
+aggregates the native, Python, coverage, Python lint, packaging and live checks,
+allowing only skips selected by change detection or fork safety. Keep separately
+required external checks, such as pre-commit.ci and Read the Docs. Draft Python
+checks cover 3.14; ready PRs use all supported versions.
 
 ## Credentials
 
-Set the same three values in each environment:
+Live tests and executable examples require these three values:
 
 | Name                | Value                                        |
 | ------------------- | -------------------------------------------- |
@@ -49,8 +50,6 @@ Set the same three values in each environment:
 - **GitHub:** repository
   **Settings → Secrets and variables → Actions → New repository secret**. Only
   the reusable live-test workflow receives these three secrets.
-- **Read the Docs:** project **Admin → Environment Variables**, with
-  **Public unchecked**. GitHub secrets are not inherited by RtD.
 - **Local development:** export the same variables securely. Applications can
   also use the protected auth file described in
   [authentication](authentication.md).
@@ -68,13 +67,10 @@ Successful notebook executions are cached; errors and Sphinx warnings fail the
 build. Clear `docs/_build/.jupyter_cache` to force execution after changing
 credentials. A fresh execution submits one small EMU_FREE batch.
 
-Import the project into Read the Docs with `.readthedocs.yaml` and build the
-default branch. Default documentation builds need no cloud credentials. RtD uses
-Python 3.14 and the same Nox command. RtD pull-request builds are skipped
-because private variables are unavailable there. GitHub CI uploads the offline
-`documentation` HTML artifact for every PR. The reusable live workflow
-separately executes notebooks for trusted changes. Inspect rendered pages with
-Chrome DevTools after layout changes.
+Read the Docs builds the default branch and pull requests with
+`.readthedocs.yaml`, Python 3.14 and the same Nox command. These builds need no
+cloud credentials. The reusable live workflow executes notebooks for trusted
+changes. Inspect rendered pages with Chrome DevTools after layout changes.
 
 ## Releases
 
