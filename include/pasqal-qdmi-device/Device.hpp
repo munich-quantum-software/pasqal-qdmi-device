@@ -63,6 +63,10 @@ Histogram make_histogram(const std::map<std::string, std::size_t>& counts,
 
 } // namespace pasqal
 
+struct PASQAL_QDMI_Site_impl_d {
+  std::size_t index;
+};
+
 struct PASQAL_QDMI_Device_Session_impl_d {
   bool initialized = false;
   std::optional<std::string> base_url;
@@ -76,6 +80,8 @@ struct PASQAL_QDMI_Device_Session_impl_d {
   std::optional<std::string> client_id;
   std::optional<std::string> client_secret;
   pasqal::DeviceSpecs specs;
+  std::vector<PASQAL_QDMI_Site_impl_d> sites;
+  std::vector<PASQAL_QDMI_Site> site_handles;
   std::unique_ptr<pasqal::CloudClient> cloud;
 
   PASQAL_QDMI_Device_Session_impl_d();

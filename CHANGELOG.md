@@ -10,6 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- ✨ Expose regular QDMI sites for the selected backend's atom capacity, indexed
+  by program register order ([#15]) ([**@denialhaag**]).
+
 ### Changed
 
 - ♻️ Rename the `core` extra to `mqt-core` ([#14]) ([**@denialhaag**]).
@@ -49,6 +54,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
 [#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
 [#9]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/9
 [#5]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/5
