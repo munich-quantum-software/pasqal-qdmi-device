@@ -58,6 +58,14 @@ def open_device(cloud: Cloud) -> Device:
     )
 
 
+def test_sites_are_available_through_core(cloud: Cloud) -> None:
+    """Expose regular atom slots through the released Core bindings."""
+    device = open_device(cloud)
+    assert len(device.sites()) == device.qubits_num() == 12
+    assert [site.index() for site in device.regular_sites()] == list(range(12))
+    assert all(not site.is_zone() for site in device.sites())
+
+
 def test_catalogue_discovery_is_offline_and_from_installed_wheel(tmp_path: Path) -> None:
     """Discover every catalogue entry without importing the provider module."""
     code = """

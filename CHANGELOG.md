@@ -10,6 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Expose regular QDMI sites for the selected backend's atom capacity, indexed by
+  program register order.
+
 ### Changed
 
 - ♻️ Rename the `core` extra to `mqt-core` ([#14]) ([**@denialhaag**]).

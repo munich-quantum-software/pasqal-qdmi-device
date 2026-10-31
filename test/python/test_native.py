@@ -82,17 +82,58 @@ def test_backend_is_resolved_from_cloud_metadata(cloud: Cloud) -> None:
 
 
 def test_capacity_is_backend_not_first_qpu(cloud: Cloud) -> None:
-    """Read capacity from the selected backend and expose no invented sites."""
+    """Read capacity from the selected backend and expose its atom slots."""
     session = cloud.session()
     capacity = ctypes.c_size_t()
     assert (
         cloud.api.session_query_device_property(session, 4, ctypes.sizeof(capacity), ctypes.byref(capacity), None) == 0
     )
     assert capacity.value == 12
-    for prop in (5, 6):
+    for prop, expected in ((5, 12 * ctypes.sizeof(ctypes.c_void_p)), (6, 0)):
         size = ctypes.c_size_t(99)
         assert cloud.api.session_query_device_property(session, prop, 0, None, ctypes.byref(size)) == 0
-        assert size.value == 0
+        assert size.value == expected
+
+
+@pytest.mark.parametrize("capacity", [1, 12, 100])
+def test_sites_have_stable_session_owned_indices(cloud: Cloud, capacity: int) -> None:
+    """Expose backend capacity without claiming fixed positions or calibration."""
+    cloud.device["max_atom_num"] = capacity
+    session = cloud.session()
+    sites = (ctypes.c_void_p * capacity)()
+    size = ctypes.c_size_t()
+    assert cloud.api.session_query_device_property(session, 5, 0, None, ctypes.byref(size)) == 0
+    assert size.value == ctypes.sizeof(sites)
+    assert cloud.api.session_query_device_property(session, 5, size.value - 1, sites, None) == -7
+    assert list(sites) == [None] * capacity
+    assert cloud.api.session_query_device_property(session, 5, size.value, sites, None) == 0
+    repeated = (ctypes.c_void_p * capacity)()
+    assert cloud.api.session_query_device_property(session, 5, size.value, repeated, None) == 0
+    assert list(repeated) == list(sites)
+    other = cloud.session()
+    uninitialized = ctypes.c_void_p()
+    assert cloud.api.session_alloc(ctypes.byref(uninitialized)) == 0
+    cloud.cleanup.callback(cloud.api.session_free, uninitialized)
+    query = cloud.api.session_query_site_property
+    for index, site in enumerate(sites):
+        value = ctypes.c_size_t(999)
+        assert query(session, site, 0, 0, None, ctypes.byref(size)) == 0
+        assert size.value == ctypes.sizeof(value)
+        assert query(session, site, 0, size.value - 1, ctypes.byref(value), None) == -7
+        assert value.value == 999
+        assert query(session, site, 0, size.value, ctypes.byref(value), None) == 0
+        assert value.value == index
+        zone = ctypes.c_bool(1)
+        assert query(session, site, 7, ctypes.sizeof(zone), ctypes.byref(zone), None) == 0
+        assert not zone.value
+        for prop in (1, 2, 3, 4, 5, 6):
+            assert query(session, site, prop, 0, None, None) == -9
+        assert query(other, site, 0, 0, None, None) == -7
+        assert query(uninitialized, site, 0, 0, None, None) == -10
+    assert query(None, sites[0], 0, 0, None, None) == -7
+    assert query(session, None, 0, 0, None, None) == -7
+    assert query(session, 1, 0, 0, None, None) == -7
+    assert query(session, sites[0], 1000, 0, None, None) == -7
 
 
 def test_one_batch_preserves_order_and_fresh_retrieval(cloud: Cloud) -> None:
