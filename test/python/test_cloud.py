@@ -44,7 +44,9 @@ def test_cloud_submission_and_retrieval(monkeypatch: pytest.MonkeyPatch) -> None
     assert metadata["bill_usage"] is False
     assert device.qubits_num() == metadata["max_atom_num"]
     assert device.qubits_num() >= 3
-    assert device.sites() == device.operations() == []
+    assert len(device.sites()) == device.qubits_num()
+    assert [site.index() for site in device.regular_sites()] == list(range(device.qubits_num()))
+    assert device.operations() == []
     assert device.supported_program_formats() == [ProgramFormat.CUSTOM1]
     assert device.query_custom_property(CustomProperty.CUSTOM1, str)
 

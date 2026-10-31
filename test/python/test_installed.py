@@ -58,14 +58,6 @@ def open_device(cloud: Cloud) -> Device:
     )
 
 
-def test_sites_are_available_through_core(cloud: Cloud) -> None:
-    """Expose regular atom slots through the released Core bindings."""
-    device = open_device(cloud)
-    assert len(device.sites()) == device.qubits_num() == 12
-    assert [site.index() for site in device.regular_sites()] == list(range(12))
-    assert all(not site.is_zone() for site in device.sites())
-
-
 def test_catalogue_discovery_is_offline_and_from_installed_wheel(tmp_path: Path) -> None:
     """Discover every catalogue entry without importing the provider module."""
     code = """
@@ -107,10 +99,16 @@ def test_independent_pulser_oracle() -> None:
 
 
 def test_pulser_connection_round_trip(cloud: Cloud) -> None:
-    """Build mapped programs through QPUBackend and retrieve ordered Pulser results."""
+    """Query atom slots, build mapped programs and retrieve ordered Pulser results."""
+    cloud.device["max_atom_num"] = 6
     cloud.specs = [{"device_type": "FRESNEL", "specs": DigitalAnalogDevice.to_abstract_repr()}]
     session = {"base_url": cloud.base, "token": "token", "custom3": "project"}
     connection = QDMIConnection(**session)
+    device = connection.device
+    assert len(device.sites()) == device.qubits_num() == 6
+    assert [site.index() for site in device.regular_sites()] == list(range(6))
+    assert device.sites()[0].x_coordinate() is None
+    assert device.operations() == []
     layout = RegisterLayout([(x, 0) for x in range(-20, 40, 10)])
     sequence = Sequence(MappableRegister(layout, "z", "a", "m"), connection.fetch_available_devices()["FRESNEL"])
     sequence.declare_channel("local", "rydberg_local", initial_target="z")
