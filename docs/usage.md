@@ -8,7 +8,7 @@ language_info:
 
 # Native Pulser usage
 
-Install the `core` and `pulser` extras and
+Install the `mqt-core` and `pulser` extras and
 [configure your credentials](authentication.md). This example submits one batch
 of two small programs to Pasqal's free EMU_FREE service. Other emulators can
 consume credits.

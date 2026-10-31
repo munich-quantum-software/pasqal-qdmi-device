@@ -6,7 +6,7 @@ distribution includes the official Pasqal SDK and local simulation support.
 Install the package with the integrations you need:
 
 ```console
-uv pip install 'pasqal-qdmi[core,pulser]'
+uv pip install 'pasqal-qdmi[mqt-core,pulser]'
 ```
 
 To build a wheel from a source checkout:
@@ -22,10 +22,10 @@ Use `build/consumer/Scripts/python.exe` on Windows. Listing installed IDs reads
 the manifest without authenticating or loading the provider. See the
 [device catalogue](capabilities.md#device-catalogue) for the available systems.
 
-| Extra    | Purpose                                                                                 |
-| -------- | --------------------------------------------------------------------------------------- |
-| `core`   | Shared QDMI Python API through MQT Core >=4.1.1                                         |
-| `pulser` | Full Pulser >=1.9.1 distribution, including the official cloud SDK and local simulation |
+| Extra      | Purpose                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------- |
+| `mqt-core` | Shared QDMI Python API through MQT Core >=4.1.1                                         |
+| `pulser`   | Full Pulser >=1.9.1 distribution, including the official cloud SDK and local simulation |
 
 The Pulser backend, `pasqal.qdmi.pulser`, needs both extras. The base package
 has no Python runtime dependencies. Native C/C++ applications can use the

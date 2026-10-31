@@ -60,7 +60,7 @@ name = "Aleksander Wennersteen"
 email = "aleksander.wennersteen@pasqal.com"
 
 [project.optional-dependencies]
-core = [ "mqt-core>=4.1.1" ]
+mqt-core = [ "mqt-core>=4.1.1" ]
 pulser = [ "pulser>=1.9.1" ]
 
 [project.urls]

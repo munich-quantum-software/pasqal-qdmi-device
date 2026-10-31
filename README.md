@@ -50,7 +50,7 @@ emulators and quantum processors depends on your Pasqal account and region.
 Install the Python package with the optional Core and Pulser integrations:
 
 ```console
-uv pip install 'pasqal-qdmi[core,pulser]'
+uv pip install 'pasqal-qdmi[mqt-core,pulser]'
 ```
 
 Building from source requires a C++20 compiler, CMake 3.24 or newer, and OpenSSL

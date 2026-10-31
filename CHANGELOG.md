@@ -10,6 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- Rename the `core` extra to `mqt-core`. Install `pasqal-qdmi[mqt-core]` instead
+  of `pasqal-qdmi[core]` when upgrading.
+
 ## [1.0.0] - 2026-10-27
 
 ### Added
