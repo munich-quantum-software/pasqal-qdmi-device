@@ -54,8 +54,9 @@ checking its caller, invariant and history. Use independently derived
 expectations for ordering and sampled outcomes, with tolerances that make false
 failures unlikely.
 
-Ordinary tests and documentation execute on EMU_FREE using the credentials in
-[maintenance](maintenance.md#credentials). Local HTTP fixtures cover malformed
+Ordinary tests and minimum-version sessions use local HTTP fixtures. Explicit
+live checks execute on EMU_FREE using the credentials in
+[maintenance](maintenance.md#credentials). The fixtures cover malformed
 responses, timeouts and lost submissions. Keep executable examples in MyST-NB,
 and one-off experiments, reports and machine setup outside the repository.
 Record performance claims only with representative measurements.

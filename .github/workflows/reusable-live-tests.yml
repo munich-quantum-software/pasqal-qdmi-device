@@ -1,0 +1,43 @@
+name: ☁️ Live tests
+on:
+  workflow_call:
+    secrets:
+      PASQAL_EMAIL:
+        required: true
+      PASQAL_PASSWORD:
+        required: true
+      PASQAL_PROJECT_ID:
+        required: true
+permissions:
+  contents: read
+jobs:
+  emu-free:
+    name: ☁️ Live tests · Pasqal EMU_FREE
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          python-version: "3.14"
+          enable-cache: true
+          save-cache: ${{ github.ref == 'refs/heads/main' }}
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
+      - name: Run checks
+        run: |
+          cmake --preset release
+          cmake --build --preset release --parallel 2
+          ctest --test-dir build/release -L live --output-on-failure --timeout 600
+      - name: EMU_FREE checks
+        run: uvx nox -s live-tests
+        env:
+          PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
+          PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+          PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
+    concurrency:
+      group: pasqal-emu-free-ubuntu-26.04
+      queue: max

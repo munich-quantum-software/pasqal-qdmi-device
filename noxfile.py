@@ -21,13 +21,14 @@
 # dependencies = ["nox"]
 # ///
 
-"""Development checks for the native device and its installed package."""
+"""Python tests, lint and documentation builds."""
 
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
-from pathlib import Path
+import tempfile
 
 import nox
 
@@ -47,57 +48,54 @@ def lint(session: nox.Session) -> None:
 
 @nox.session(python=PYTHON_ALL_VERSIONS, reuse_venv=True, default=True)
 def tests(session: nox.Session) -> None:
-    """Test the installed package on EMU_FREE and local HTTP boundaries."""
+    """Test the installed package against local HTTP fixtures."""
+    _run_tests(session)
+
+
+def _run_tests(session: nox.Session, *, minimums: bool = False, live: bool = False) -> None:
+    env = {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
+    if not live:
+        env.update(PASQAL_EMAIL="", PASQAL_PASSWORD="", PASQAL_PROJECT_ID="", PASQAL_AUTHFILE="")
     session.run(
         "uv",
         "run",
-        "--locked",
+        *(["--resolution=lowest-direct"] if minimums else ["--locked"]),
         "--no-dev",
         "--group",
         "test",
         "pytest",
         *session.posargs,
-        env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+        "-m",
+        "live" if live else "not live",
+        *(["-n", "0"] if live else []),
+        env=env,
     )
 
 
-@nox.session(venv_backend="none", default=False)
-def native(session: nox.Session) -> None:
-    """Build and run CTest; pass --sanitizers for Linux ASan and UBSan checks."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", choices=("Release", "Debug"), default="Release")
-    parser.add_argument("--sanitizers", action="store_true")
-    args, cmake_args = parser.parse_known_args(session.posargs)
-    build_dir = Path("build") / ("sanitizers" if args.sanitizers else "native")
-    if args.sanitizers:
-        flags = "-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all"
-        cmake_args.extend([f"-DCMAKE_C_FLAGS={flags}", f"-DCMAKE_CXX_FLAGS={flags}"])
-    session.run(
-        "cmake",
-        "-S",
-        ".",
-        "-B",
-        str(build_dir),
-        f"-DCMAKE_BUILD_TYPE={args.config}",
-        *cmake_args,
-    )
-    session.run("cmake", "--build", str(build_dir), "--config", args.config, "--parallel", "2")
-    session.run(
-        "ctest",
-        "--test-dir",
-        str(build_dir),
-        "-C",
-        args.config,
-        "--output-on-failure",
-        "--timeout",
-        "600",
-    )
+@nox.session(python=PYTHON_ALL_VERSIONS, reuse_venv=True, default=True)
+def minimums(session: nox.Session) -> None:
+    """Test minimum direct dependency versions."""
+    with tempfile.TemporaryDirectory() as directory:
+        lockfile = shutil.move("uv.lock", f"{directory}/uv.lock")
+        try:
+            _run_tests(session, minimums=True)
+        finally:
+            shutil.move(lockfile, "uv.lock")
+
+
+@nox.session(name="live-tests", python="3.14", reuse_venv=True, default=False)
+def live_tests(session: nox.Session) -> None:
+    """Run the EMU_FREE integration tests."""
+    if not all(os.environ.get(name) for name in ("PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID")):
+        session.error("EMU_FREE tests require Pasqal credentials")
+    _run_tests(session, live=True)
 
 
 @nox.session(python="3.14", reuse_venv=True, default=True)
 def docs(session: nox.Session) -> None:
-    """Build documentation and execute its notebook examples."""
+    """Build documentation; pass --live to execute provider-backed notebooks."""
     parser = argparse.ArgumentParser()
+    parser.add_argument("--live", action="store_true", help="Execute provider-backed notebook examples")
     parser.add_argument("-b", dest="builder", default="html", help="Sphinx builder")
     args, posargs = parser.parse_known_args(session.posargs)
     session.run(
@@ -115,6 +113,7 @@ def docs(session: nox.Session) -> None:
         args.builder,
         "docs",
         f"docs/_build/{args.builder}",
+        *([] if args.live else ["-D", "nb_execution_mode=off"]),
         *posargs,
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )

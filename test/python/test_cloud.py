@@ -32,7 +32,7 @@ from mqt.core.qdmi import CustomProperty, Job, ProgramFormat, builtin_driver
 from pasqal_cloud.pasqal_cloud_client import PasqalCloudClient
 
 
-@pytest.mark.integration
+@pytest.mark.live
 def test_cloud_submission_and_retrieval(monkeypatch: pytest.MonkeyPatch) -> None:
     """Check real batching, atom order, ownership and fresh-session SDK parity."""
     device = builtin_driver.open_device("pasqal.emu-free")

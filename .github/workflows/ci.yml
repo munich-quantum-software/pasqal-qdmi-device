@@ -6,119 +6,223 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
-
-permissions:
-  contents: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  native:
-    name: 🇨 Test
+  change-detection:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-change-detection.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🔍 Change
+    with:
+      additional-cpp-files: |
+        CMakePresets.json
+        .github/workflows/cpp-install-tests.yml
+        .github/workflows/reusable-live-tests.yml
+      additional-python-files: |
+        .github/workflows/reusable-live-tests.yml
+        test/python/fixtures/**
+
+  cpp-tests-ubuntu:
+    name: 🇨 Test 🐧
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-26.04, macos-26, windows-2025]
-        config: [Release]
-        sanitizers: [false]
+        runs-on:
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
+        preset:
+          - release
         include:
           - runs-on: ubuntu-26.04
-            config: Debug
-            sanitizers: true
-    runs-on: ${{ matrix.runs-on }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          python-version: "3.14"
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
-      - name: Build and test native interfaces
-        env:
-          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:strict_string_checks=1
-          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: uvx nox -s native -- --config ${{ matrix.config }} ${{ matrix.sanitizers && '--sanitizers' || '' }}
-      - name: Relocated installed consumer
-        if: ${{ !matrix.sanitizers }}
-        run: cmake -P test/install.cmake
+            preset: debug
+    with:
+      runs-on: ${{ matrix.runs-on }}
+      preset-name: ${{ matrix.preset }}
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-ubuntu.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
 
-  lint:
-    name: 🐍 Lint
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          python-version: "3.14"
-      - name: Run pre-commit checks
-        run: uvx nox -s lint
-
-  documentation:
-    name: 📚 Documentation
-    # Share the Linux x86 slot so docs cannot add a fifth concurrent cloud batch.
-    concurrency:
-      group: pasqal-emu-free-ubuntu-26.04
-      queue: max
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.event.pull_request.base.repo.id
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          python-version: "3.14"
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
-      - name: Build documentation
-        run: uvx nox -s docs
-        env:
-          PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
-          PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
-          PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: documentation
-          path: docs/_build/html
-          if-no-files-found: error
-
-  build-sdist:
-    name: 🐍 Packaging
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-sdist.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
-
-  build-wheel:
-    name: 🐍 Packaging
+  cpp-tests-macos:
+    name: 🇨 Test 🍎
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-2025]
-    uses: $/.github/workflows/wheels.yml
+        runs-on:
+          - macos-26
+        preset:
+          - release
+        include:
+          - runs-on: macos-26
+            preset: debug
     with:
       runs-on: ${{ matrix.runs-on }}
+      preset-name: ${{ matrix.preset }}
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-macos.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+
+  cpp-tests-windows:
+    name: 🇨 Test 🏁
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - windows-2025
+        preset:
+          - release
+    with:
+      runs-on: ${{ matrix.runs-on }}
+      preset-name: ${{ matrix.preset }}
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-windows.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+
+  cpp-sanitizers:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-ubuntu.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🇨 Sanitizers
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
+    with:
+      runs-on: ubuntu-26.04
+      preset-name: sanitizers
+
+  python-tests:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-tests.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🐍 Test
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-python-tests)
+    with:
+      runs-on: ubuntu-26.04
+      sessions: '["tests", "minimums"]'
+      draft-sessions: '["tests-3.15", "minimums-3.15"]'
+
+  python-coverage:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-coverage.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🐍 Coverage
+    needs: python-tests
+    permissions:
+      contents: read
+      id-token: write
+
+  python-linter:
+    name: 🐍 Lint
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-python-linter)
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-linter.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    with:
+      enable-ty: true
+      enable-mypy: false
+
+  cpp-install-tests:
+    name: 📦 Native installation
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
+          - macos-26
+          - windows-2025
+    uses: $/.github/workflows/cpp-install-tests.yml
+    with:
+      runs-on: ${{ matrix.runs-on }}
+
+  build-sdist:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-sdist.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🚀 CD
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-python-tests) || fromJSON(needs.change-detection.outputs.run-cd)
+
+  build-wheel:
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    name: 🚀 CD
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-python-tests) || fromJSON(needs.change-detection.outputs.run-cd)
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on:
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
+          - macos-26
+          - windows-2025
+    with:
+      runs-on: ${{ matrix.runs-on }}
+
+  live-tests:
+    name: ☁️ Live tests
+    needs:
+      - cpp-tests-ubuntu
+      - cpp-tests-macos
+      - cpp-tests-windows
+      - python-tests
+      - build-wheel
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && contains(needs.*.result, 'success')
+      && (
+        github.event_name != 'pull_request'
+        || github.event.pull_request.head.repo.full_name == github.repository
+      )
+    uses: $/.github/workflows/reusable-live-tests.yml
     secrets:
       PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
       PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
       PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
 
-  # This job provides the required branch protection check.
   required-checks-pass:
     name: 🚦 Check
     if: always()
-    needs: [native, lint, documentation, build-sdist, build-wheel]
+    needs:
+      - change-detection
+      - cpp-tests-ubuntu
+      - cpp-tests-macos
+      - cpp-tests-windows
+      - cpp-sanitizers
+      - python-tests
+      - python-coverage
+      - python-linter
+      - cpp-install-tests
+      - build-sdist
+      - build-wheel
+      - live-tests
     runs-on: ubuntu-slim
     steps:
-      - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
+      - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
         with:
-          allowed-skips: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.id != github.event.pull_request.base.repo.id && 'documentation' || '' }}
+          allowed-skips: >-
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-cpp-tests)
+              && 'cpp-tests-ubuntu,cpp-tests-macos,cpp-tests-windows,cpp-sanitizers,cpp-install-tests,' || ''
+            }}
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-python-tests)
+              && 'python-tests,python-coverage,' || ''
+            }}
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-python-linter)
+              && 'python-linter,' || ''
+            }}
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-python-tests)
+              && !fromJSON(needs.change-detection.outputs.run-cd)
+              && 'build-sdist,build-wheel,' || ''
+            }}
+            ${{
+              (
+                github.event_name == 'pull_request'
+                && github.event.pull_request.head.repo.full_name != github.repository
+                || !fromJSON(needs.change-detection.outputs.run-cpp-tests)
+                && !fromJSON(needs.change-detection.outputs.run-python-tests)
+                && !fromJSON(needs.change-detection.outputs.run-cd)
+              )
+              && 'live-tests,' || ''
+            }}
           jobs: ${{ toJSON(needs) }}
