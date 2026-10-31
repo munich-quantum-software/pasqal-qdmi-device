@@ -33,7 +33,7 @@ For branch protection, require the GitHub Actions `🚦 Check` status from CI. I
 aggregates the native, Python, coverage, Python lint, packaging and live checks,
 allowing only skips selected by change detection or fork safety. Keep separately
 required external checks, such as pre-commit.ci and Read the Docs. Draft Python
-checks cover 3.14; ready PRs use all supported versions.
+checks cover 3.15; ready PRs use all supported versions.
 
 ## Credentials
 

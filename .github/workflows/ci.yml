@@ -25,9 +25,6 @@ jobs:
       additional-python-files: |
         .github/workflows/reusable-live-tests.yml
         test/python/fixtures/**
-      additional-cd-files: |
-        LICENSE
-        README.md
 
   cpp-tests-ubuntu:
     name: 🇨 Test 🐧
@@ -101,7 +98,7 @@ jobs:
     with:
       runs-on: ubuntu-26.04
       sessions: '["tests", "minimums"]'
-      draft-sessions: '["tests-3.14", "minimums-3.14"]'
+      draft-sessions: '["tests-3.15", "minimums-3.15"]'
 
   python-coverage:
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-coverage.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
@@ -129,6 +126,7 @@ jobs:
       matrix:
         runs-on:
           - ubuntu-26.04
+          - ubuntu-26.04-arm
           - macos-26
           - windows-2025
     uses: $/.github/workflows/cpp-install-tests.yml
