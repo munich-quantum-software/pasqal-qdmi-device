@@ -12,8 +12,7 @@ releases may include breaking changes.
 
 ### Changed
 
-- Rename the `core` extra to `mqt-core`. Install `pasqal-qdmi[mqt-core]` instead
-  of `pasqal-qdmi[core]` when upgrading.
+- ♻️ Rename the `core` extra to `mqt-core` ([#14]) ([**@denialhaag**]).
 
 ## [1.0.0] - 2026-10-27
 
@@ -50,6 +49,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
 [#9]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/9
 [#5]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/5
 [#3]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/3
