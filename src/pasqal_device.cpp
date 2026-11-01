@@ -539,6 +539,12 @@ int PASQAL_QDMI_device_session_init(PASQAL_QDMI_Device_Session session) {
         pasqal::DeviceSpecs::from_metadata(backend, cloud->device_metadata());
     session->specs.pulser_specs =
         cloud->device_spec_entries(session->specs.is_emulator);
+    session->sites.resize(session->specs.qubits_num);
+    session->site_handles.resize(session->sites.size());
+    for (size_t index = 0; index < session->sites.size(); ++index) {
+      session->sites[index].index = index;
+      session->site_handles[index] = &session->sites[index];
+    }
     session->cloud = std::move(cloud);
     session->initialized = true;
     return QDMI_SUCCESS;
@@ -575,6 +581,9 @@ int PASQAL_QDMI_device_session_query_device_property(
     case QDMI_DEVICE_PROPERTY_QUBITSNUM:
       return copy_value(specs.qubits_num, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_SITES:
+      return copy_data(session->site_handles.data(),
+                       session->site_handles.size() * sizeof(PASQAL_QDMI_Site),
+                       size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_OPERATIONS:
       return copy_data(nullptr, 0, size, value, size_ret);
     case QDMI_DEVICE_PROPERTY_QUEUELENGTH:
@@ -605,11 +614,18 @@ int PASQAL_QDMI_device_session_query_site_property(
   if (!session->initialized) {
     return QDMI_ERROR_BADSTATE;
   }
-  // This backend exposes no device-global site handles.
-  (void)size;
-  (void)value;
-  (void)size_ret;
-  return QDMI_ERROR_INVALIDARGUMENT;
+  if (std::find(session->site_handles.begin(), session->site_handles.end(),
+                site) == session->site_handles.end()) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  switch (prop) {
+  case QDMI_SITE_PROPERTY_INDEX:
+    return copy_value(site->index, size, value, size_ret);
+  case QDMI_SITE_PROPERTY_ISZONE:
+    return copy_value(false, size, value, size_ret);
+  default:
+    return QDMI_ERROR_NOTSUPPORTED;
+  }
 }
 
 int PASQAL_QDMI_device_session_query_operation_property(

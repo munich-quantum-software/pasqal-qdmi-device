@@ -1911,7 +1911,7 @@ version = "1.0.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
-core = [
+mqt-core = [
     { name = "mqt-core" },
 ]
 pulser = [
@@ -1953,10 +1953,10 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mqt-core", marker = "extra == 'core'", specifier = ">=4.1.1" },
+    { name = "mqt-core", marker = "extra == 'mqt-core'", specifier = ">=4.1.1" },
     { name = "pulser", marker = "extra == 'pulser'", specifier = ">=1.9.1" },
 ]
-provides-extras = ["core", "pulser"]
+provides-extras = ["mqt-core", "pulser"]
 
 [package.metadata.requires-dev]
 build = [{ name = "scikit-build-core", specifier = ">=1.1.1" }]

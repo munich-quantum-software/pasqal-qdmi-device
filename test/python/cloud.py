@@ -63,6 +63,7 @@ class NativeAPI:
             "session_init": [handle],
             "session_free": [handle],
             "session_query_device_property": [handle, integer, size, handle, ctypes.POINTER(size)],
+            "session_query_site_property": [handle, handle, integer, size, handle, ctypes.POINTER(size)],
             "session_create_device_job": [handle, ctypes.POINTER(handle)],
             "session_retrieve_device_job_by_id": [handle, ctypes.c_char_p, ctypes.POINTER(handle)],
             "job_set_parameter": [handle, integer, size, handle],

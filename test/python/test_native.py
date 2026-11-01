@@ -82,17 +82,26 @@ def test_backend_is_resolved_from_cloud_metadata(cloud: Cloud) -> None:
 
 
 def test_capacity_is_backend_not_first_qpu(cloud: Cloud) -> None:
-    """Read capacity from the selected backend and expose no invented sites."""
+    """Read capacity from the selected backend metadata."""
     session = cloud.session()
     capacity = ctypes.c_size_t()
     assert (
         cloud.api.session_query_device_property(session, 4, ctypes.sizeof(capacity), ctypes.byref(capacity), None) == 0
     )
     assert capacity.value == 12
-    for prop in (5, 6):
-        size = ctypes.c_size_t(99)
-        assert cloud.api.session_query_device_property(session, prop, 0, None, ctypes.byref(size)) == 0
-        assert size.value == 0
+
+
+def test_site_buffers_and_session_ownership(cloud: Cloud) -> None:
+    """Validate buffer sizes and session ownership of native site handles."""
+    session = cloud.session()
+    sites = (ctypes.c_void_p * 12)()
+    size = ctypes.sizeof(sites)
+    assert cloud.api.session_query_device_property(session, 5, size - 1, sites, None) == -7
+    assert cloud.api.session_query_device_property(session, 5, size, sites, None) == 0
+    index = ctypes.c_size_t()
+    query = cloud.api.session_query_site_property
+    assert query(session, sites[0], 0, ctypes.sizeof(index) - 1, ctypes.byref(index), None) == -7
+    assert query(cloud.session(), sites[0], 0, 0, None, None) == -7
 
 
 def test_one_batch_preserves_order_and_fresh_retrieval(cloud: Cloud) -> None:

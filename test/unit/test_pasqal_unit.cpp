@@ -174,26 +174,24 @@ TEST_F(ProgramListTest, UnsubmittedJobsRejectWaitAndResults) {
             QDMI_ERROR_BADSTATE);
 }
 
-TEST(Session, EmptyTopologyLeavesOutputBuffersUntouched) {
+TEST(Session, EmptyOperationsLeaveOutputBuffersUntouched) {
   auto* session = initialized_session();
-  for (const auto property :
-       {QDMI_DEVICE_PROPERTY_SITES, QDMI_DEVICE_PROPERTY_OPERATIONS}) {
-    size_t size = 99;
-    EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
-                  session, property, 0, nullptr, &size),
-              QDMI_SUCCESS);
-    EXPECT_EQ(size, 0U);
-    char sentinel = '#';
-    EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
-                  session, property, 0, &sentinel, nullptr),
-              QDMI_SUCCESS);
-    EXPECT_EQ(sentinel, '#');
-    EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
-                  session, property, sizeof(sentinel), &sentinel, &size),
-              QDMI_SUCCESS);
-    EXPECT_EQ(size, 0U);
-    EXPECT_EQ(sentinel, '#');
-  }
+  constexpr auto property = QDMI_DEVICE_PROPERTY_OPERATIONS;
+  size_t size = 99;
+  EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(session, property,
+                                                             0, nullptr, &size),
+            QDMI_SUCCESS);
+  EXPECT_EQ(size, 0U);
+  char sentinel = '#';
+  EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, property, 0, &sentinel, nullptr),
+            QDMI_SUCCESS);
+  EXPECT_EQ(sentinel, '#');
+  EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
+                session, property, sizeof(sentinel), &sentinel, &size),
+            QDMI_SUCCESS);
+  EXPECT_EQ(size, 0U);
+  EXPECT_EQ(sentinel, '#');
   EXPECT_EQ(PASQAL_QDMI_device_session_query_device_property(
                 session, QDMI_DEVICE_PROPERTY_COUPLINGMAP, 0, nullptr, nullptr),
             QDMI_ERROR_NOTSUPPORTED);

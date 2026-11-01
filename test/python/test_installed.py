@@ -99,10 +99,16 @@ def test_independent_pulser_oracle() -> None:
 
 
 def test_pulser_connection_round_trip(cloud: Cloud) -> None:
-    """Build mapped programs through QPUBackend and retrieve ordered Pulser results."""
+    """Query atom slots, build mapped programs and retrieve ordered Pulser results."""
+    cloud.device["max_atom_num"] = 6
     cloud.specs = [{"device_type": "FRESNEL", "specs": DigitalAnalogDevice.to_abstract_repr()}]
     session = {"base_url": cloud.base, "token": "token", "custom3": "project"}
     connection = QDMIConnection(**session)
+    device = connection.device
+    assert len(device.sites()) == device.qubits_num() == 6
+    assert [site.index() for site in device.regular_sites()] == list(range(6))
+    assert device.sites()[0].x_coordinate() is None
+    assert device.operations() == []
     layout = RegisterLayout([(x, 0) for x in range(-20, 40, 10)])
     sequence = Sequence(MappableRegister(layout, "z", "a", "m"), connection.fetch_available_devices()["FRESNEL"])
     sequence.declare_channel("local", "rydberg_local", initial_target="z")
