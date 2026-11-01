@@ -101,6 +101,25 @@ jobs:
       contents: read
       id-token: write
 
+  cpp-linter:
+    name: 🇨 Lint
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-linter)
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-linter.yml@ae2d91d2b75355d005248c8e14af18a074fe3bb2 # v2.5.6
+    with:
+      clang-version: 23
+      # Standalone files can inherit commands without all required includes.
+      cpp-linter-extra-args: >-
+        -I${{ github.workspace }}/build/src/include
+        -I${{ github.workspace }}/build/_deps/cpr-src/include
+        -I${{ github.workspace }}/build/_deps/cpr-build/cpr_generated_includes
+        -I${{ github.workspace }}/build/_deps/curl-src/include
+      cpp-linter-ignore-extra: "!include/pasqal-qdmi-device/**"
+      files-changed-only: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+      pull-requests: write
+
   python-tests:
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-tests.yml@ae2d91d2b75355d005248c8e14af18a074fe3bb2 # v2.5.6
     name: 🐍 Test
@@ -199,6 +218,7 @@ jobs:
       - cpp-tests-windows
       - cpp-sanitizers
       - cpp-coverage
+      - cpp-linter
       - python-tests
       - python-coverage
       - python-linter
@@ -218,6 +238,10 @@ jobs:
             ${{
               !fromJSON(needs.change-detection.outputs.run-cpp-tests)
               && 'cpp-coverage,' || ''
+            }}
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-cpp-linter)
+              && 'cpp-linter,' || ''
             }}
             ${{
               !fromJSON(needs.change-detection.outputs.run-python-tests)

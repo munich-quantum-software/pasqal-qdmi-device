@@ -19,11 +19,15 @@
 // Map selected Pasqal backend metadata to truthful QDMI properties.
 
 #include "pasqal-qdmi-device/Specs.hpp"
+#include "pasqal_qdmi/constants.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <stdexcept>
+#include <string>
 
 namespace pasqal {
 

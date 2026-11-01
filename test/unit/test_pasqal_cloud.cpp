@@ -19,13 +19,20 @@
 #include "pasqal-qdmi-device/Cloud.hpp"
 
 #include <gtest/gtest.h>
+#include <stdexcept>
 
 TEST(CloudValidation, RejectsCredentialUnsafeEndpoints) {
-  for (const auto* url :
-       {"http://api.example.com", "api.example.com", "", "file:///tmp/token",
-        "https://user:password@example.com", "https://@example.com",
-        "https://example.com/#fragment", "http://localhost.example.com",
-        "http://127.0.0.1@example.com"}) {
+  for (const auto* url : {
+           "http://api.example.com",
+           "api.example.com",
+           "",
+           "file:///tmp/token",
+           "https://user:password@example.com",
+           "https://@example.com",
+           "https://example.com/#fragment",
+           "http://localhost.example.com",
+           "http://127.0.0.1@example.com",
+       }) {
     pasqal::CloudConfig config;
     config.base_url = url;
     EXPECT_THROW(pasqal::CloudClient{config}, std::invalid_argument) << url;
