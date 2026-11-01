@@ -18,25 +18,26 @@
 
 #include "pasqal-qdmi-device/Cloud.hpp"
 
+#include "cpr/connection_pool.h"
+#include "cpr/error.h"
+#include "cpr/payload.h"
+#include "cpr/response.h"
+#include "cpr/session.h"
+#include "cpr/ssl_options.h"
+#include "curl/curl.h"
+#include "curl/urlapi.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <cmath>
-#include <cpr/connection_pool.h>
-#include <cpr/error.h>
-#include <cpr/payload.h>
-#include <cpr/response.h>
-#include <cpr/session.h>
-#include <cpr/ssl_options.h>
 #include <cstdint>
 #include <cstdlib>
-#include <curl/curl.h>
-#include <curl/urlapi.h>
 #include <limits>
 #include <map>
 #include <memory>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <set>
 #include <stdexcept>

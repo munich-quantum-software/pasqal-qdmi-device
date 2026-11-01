@@ -19,8 +19,9 @@
 
 #include "pasqal_qdmi/device.h"
 
+#include "gtest/gtest.h"
+
 #include <cstddef>
-#include <gtest/gtest.h>
 #include <string>
 
 namespace {

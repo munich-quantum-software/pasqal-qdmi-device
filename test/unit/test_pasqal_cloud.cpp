@@ -18,7 +18,8 @@
 
 #include "pasqal-qdmi-device/Cloud.hpp"
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
+
 #include <stdexcept>
 
 TEST(CloudValidation, RejectsCredentialUnsafeEndpoints) {

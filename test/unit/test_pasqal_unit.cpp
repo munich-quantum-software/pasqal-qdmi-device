@@ -22,15 +22,16 @@
 #include "pasqal_qdmi/device.h"
 #include "pasqal_qdmi/types.h"
 
+#include "gtest/gtest.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <gtest/gtest.h>
 #include <limits>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <string>
 #include <utility>

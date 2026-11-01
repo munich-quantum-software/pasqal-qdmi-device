@@ -18,9 +18,13 @@
 
 // Pasqal QDMI device: Pulser sequences on Pasqal Cloud devices and emulators.
 
-#include "pasqal-qdmi-device/Cloud.hpp"
 #include "pasqal-qdmi-device/Device.hpp"
+
+#include "pasqal-qdmi-device/Cloud.hpp"
 #include "pasqal_qdmi/device.h"
+
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -33,8 +37,6 @@
 #include <map>
 #include <memory>
 #include <new>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <set>
 #include <string>

@@ -20,8 +20,9 @@
 
 #pragma once
 
+#include "cpr/connection_pool.h"
+
 #include <chrono>
-#include <cpr/connection_pool.h>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -43,11 +44,9 @@ inline constexpr std::string_view DEFAULT_AUTH_ENDPOINT =
 /// Raised when an HTTP request fails; `status` is 0 for transport errors.
 class CloudError : public std::runtime_error {
 public:
-  // CPR uses long for HTTP status codes.
-  // NOLINTNEXTLINE(google-runtime-int)
-  CloudError(long http_status, const std::string& message)
+  CloudError(std::int64_t http_status, const std::string& message)
       : std::runtime_error(message), status(http_status) {}
-  long status; // NOLINT(google-runtime-int)
+  std::int64_t status;
 };
 
 /// Raised when credentials are missing or rejected.
