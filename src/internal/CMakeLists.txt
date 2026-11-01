@@ -47,3 +47,7 @@ target_link_libraries(
   ${QDMI_INTERNAL_TARGET_NAME}
   PUBLIC cpr::cpr nlohmann_json::nlohmann_json
   PRIVATE qdmi::qdmi_project_warnings)
+
+if(ENABLE_COVERAGE)
+  target_link_libraries(${QDMI_INTERNAL_TARGET_NAME} PUBLIC qdmi::qdmi_coverage_flags)
+endif()

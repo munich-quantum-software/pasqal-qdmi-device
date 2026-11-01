@@ -19,6 +19,25 @@ and minimum-version sessions exclude `live` tests, including in a credentialed
 shell. CI runs native tests on Linux, macOS and Windows, with Python tests and
 minimums in a separate Linux job. Wheel and release builds test local fixtures.
 
+On Linux, collect native coverage with the instrumented build:
+
+```console
+cmake --preset coverage
+cmake --build --preset coverage
+ctest --preset coverage
+```
+
+CI uploads the native gcov data under Codecov's `cpp` flag. Python test sessions
+produce a separate report under the `python` flag. To collect it locally:
+
+```console
+uvx nox -s tests-3.14 -- --cov --cov-report=xml:coverage.xml
+```
+
+`pyproject.toml` limits Python measurement to `pasqal.qdmi`;
+`.github/codecov.yml` defines the source paths and reporting thresholds.
+Coverage checks stay offline and do not include EMU_FREE or other live tests.
+
 Trusted CI calls `reusable-live-tests.yml` after offline native, Python and
 wheel checks. It queries EMU_FREE metadata and runs one Python batch of two
 three-atom, 100-shot programs. The test verifies that the selected backend is an

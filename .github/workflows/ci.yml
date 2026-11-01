@@ -90,6 +90,15 @@ jobs:
       runs-on: ubuntu-26.04
       preset-name: sanitizers
 
+  cpp-coverage:
+    name: 🇨 Coverage
+    needs: change-detection
+    if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-coverage.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
+    permissions:
+      contents: read
+      id-token: write
+
   python-tests:
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-tests.yml@a4b4977405c7685f95e127cdb6db396bbadce787 # v2.5.5
     name: 🐍 Test
@@ -186,6 +195,7 @@ jobs:
       - cpp-tests-macos
       - cpp-tests-windows
       - cpp-sanitizers
+      - cpp-coverage
       - python-tests
       - python-coverage
       - python-linter
@@ -200,7 +210,7 @@ jobs:
           allowed-skips: >-
             ${{
               !fromJSON(needs.change-detection.outputs.run-cpp-tests)
-              && 'cpp-tests-ubuntu,cpp-tests-macos,cpp-tests-windows,cpp-sanitizers,cpp-install-tests,' || ''
+              && 'cpp-tests-ubuntu,cpp-tests-macos,cpp-tests-windows,cpp-sanitizers,cpp-coverage,cpp-install-tests,' || ''
             }}
             ${{
               !fromJSON(needs.change-detection.outputs.run-python-tests)

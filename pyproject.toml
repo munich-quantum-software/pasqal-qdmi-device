@@ -246,3 +246,24 @@ markers = [
 minversion = "9.1"
 strict = true
 testpaths = [ "test/python" ]
+
+
+[tool.coverage]
+
+[tool.coverage.run]
+source = [ "pasqal.qdmi" ]
+parallel = true
+disable_warnings = [
+  "no-sysmon",
+]
+core = "sysmon"
+
+[tool.coverage.report]
+exclude_also = [
+  "@overload",                 # Overloads are only for static typing
+  '\.\.\.',
+  "def __dir__()",             # Ignore __dir__ method that exists mainly for better IDE support
+  "if TYPE_CHECKING:",
+  "raise AssertionError",
+  "raise NotImplementedError"
+]

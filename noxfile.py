@@ -65,6 +65,7 @@ def _run_tests(session: nox.Session, *, minimums: bool = False, live: bool = Fal
         "test",
         "pytest",
         *session.posargs,
+        "--cov-config=pyproject.toml",
         "-m",
         "live" if live else "not live",
         *(["-n", "0"] if live else []),
