@@ -108,7 +108,7 @@ jobs:
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-linter.yml@ae2d91d2b75355d005248c8e14af18a074fe3bb2 # v2.5.6
     with:
       clang-version: 23
-      cpp-linter-extra-args: "-I${{ github.workspace }}/build/src/include"
+      cpp-linter-extra-args: ""
       cpp-linter-ignore-extra: "!include/pasqal-qdmi-device/**"
       files-changed-only: ${{ github.event_name == 'pull_request' }}
     permissions:

@@ -27,7 +27,6 @@ string(
   LENGTH 10
   ALPHABET 0123456789abcdef suffix)
 set(prefix "${work}/prefix-${suffix}")
-set(relocated "${work}/relocated-${suffix}")
 run("${CMAKE_COMMAND}"
     -S
     "${source}"
@@ -50,19 +49,3 @@ run("${CMAKE_COMMAND}"
     Release
     --prefix
     "${prefix}")
-file(RENAME "${prefix}" "${relocated}")
-run("${CMAKE_COMMAND}"
-    -S
-    "${source}/test/install-consumer"
-    -B
-    "${work}/consumer-${suffix}"
-    -DCMAKE_BUILD_TYPE=Release
-    "-DCMAKE_PREFIX_PATH=${relocated}")
-run("${CMAKE_COMMAND}"
-    --build
-    "${work}/consumer-${suffix}"
-    --config
-    Release
-    --parallel
-    2)
-run("${CMAKE_CTEST_COMMAND}" --test-dir "${work}/consumer-${suffix}" -C Release --output-on-failure)

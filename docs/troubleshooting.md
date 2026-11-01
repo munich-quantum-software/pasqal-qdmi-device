@@ -6,8 +6,7 @@ distribution entry point `mqt.core.qdmi.manifests`. A checkout alone is not an
 installed package. Discovery does not require credentials.
 
 **The native library cannot load.** Check the wheel's platform and architecture.
-Source installs must retain the library and adjacent relative manifest. Run the
-relocated consumer check to separate packaging from authentication.
+Source installs must retain the library and adjacent relative manifest.
 
 **Authentication fails or expires.** Recheck your account credentials, auth file
 and project membership. Use the documented authentication URL and create a fresh

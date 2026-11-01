@@ -1,3 +1,0 @@
-InheritParentConfig: true
-# The standalone consumer has no entry in the parent compilation database.
-ExtraArgsBefore: [-xc, -std=c11]
