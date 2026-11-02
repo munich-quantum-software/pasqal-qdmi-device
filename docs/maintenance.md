@@ -38,14 +38,9 @@ uvx nox -s tests-3.14 -- --cov --cov-report=xml:coverage.xml
 `.github/codecov.yml` defines the source paths and reporting thresholds.
 Coverage checks stay offline and do not include EMU_FREE or other live tests.
 
-CI calls `reusable-live-tests.yml` after the selected offline native, Python and
-wheel checks pass. Every non-fork PR, including release preparation, runs live
-tests even when change detection skips all offline checks. Failed or cancelled
-prerequisites prevent live tests; fork PRs skip them. The workflow queries
-EMU_FREE metadata and runs one Python batch of two three-atom, 100-shot
-programs. The test verifies that the selected backend is an unbilled emulator
-before submitting. Live tests use the Linux EMU_FREE concurrency slot across
-runs.
+CI runs live tests on EMU_FREE for non-fork pull requests after any selected
+offline checks pass. The tests verify that the backend is an unbilled emulator
+before submitting a small workload.
 
 For an explicitly intended free-cloud check, configure the credentials below and
 use `uvx nox -s live-tests`. Keep hardware and billed emulators outside this
