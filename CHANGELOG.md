@@ -10,8 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-02
+
 ### Added
 
+- 🚨 Set up clang-tidy for C++ static analysis ([#12]) ([**@denialhaag**]).
 - ✨ Expose regular QDMI sites for the selected backend's atom capacity, indexed
   by program register order ([#15]) ([**@denialhaag**]).
 
@@ -49,13 +52,15 @@ releases may include breaking changes.
 
 <!-- Versions -->
 
-[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/compare/v1.0.0...main
+[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/compare/v1.1.0...main
+[1.1.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.1.0
 [1.0.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.0.0
 
 <!-- Pull requests -->
 
 [#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
 [#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
+[#12]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/12
 [#9]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/9
 [#5]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/5
 [#3]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/3
