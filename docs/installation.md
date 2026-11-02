@@ -75,7 +75,7 @@ An installed consumer uses
 `pasqal-qdmi-device`. Set `CMAKE_PREFIX_PATH` to the installed prefix. Headers
 include `pasqal_qdmi/device.h` and `pasqal-qdmi-device/constants.h`. The
 manifest sits beside the shared library and uses a relative library filename.
-The relocation check is `cmake -P test/install.cmake`.
+Check native installation with `cmake -P test/install.cmake`.
 
 The wheel carries the native library and manifest under `pasqal/qdmi/data/lib`
 or `lib64` (`bin` on Windows), with headers and CMake metadata elsewhere under

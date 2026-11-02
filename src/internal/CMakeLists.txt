@@ -30,8 +30,8 @@ set_target_properties(
              VISIBILITY_INLINES_HIDDEN 1)
 target_sources(
   ${QDMI_INTERNAL_TARGET_NAME}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pasqal_cloud.cpp ${CMAKE_CURRENT_SOURCE_DIR}/pasqal_specs.cpp
-          ${PROJECT_SOURCE_DIR}/src/pasqal_device.cpp)
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Cloud.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Specs.cpp
+          ${PROJECT_SOURCE_DIR}/src/Device.cpp)
 target_include_directories(
   ${QDMI_INTERNAL_TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include
                                       ${CMAKE_CURRENT_BINARY_DIR}/../include)
@@ -47,3 +47,7 @@ target_link_libraries(
   ${QDMI_INTERNAL_TARGET_NAME}
   PUBLIC cpr::cpr nlohmann_json::nlohmann_json
   PRIVATE qdmi::qdmi_project_warnings)
+
+if(ENABLE_COVERAGE)
+  target_link_libraries(${QDMI_INTERNAL_TARGET_NAME} PUBLIC qdmi::qdmi_coverage_flags)
+endif()

@@ -19,9 +19,12 @@
 
 #include "pasqal_qdmi/device.h"
 
+#include "gtest/gtest.h"
+
 #include <cstddef>
-#include <gtest/gtest.h>
 #include <string>
+
+namespace {
 
 class DeviceMetadataTest : public ::testing::Test {
 protected:
@@ -40,9 +43,12 @@ protected:
 };
 
 TEST_F(DeviceMetadataTest, ProvidesIdentityAndCapacity) {
-  for (const auto property :
-       {QDMI_DEVICE_PROPERTY_NAME, QDMI_DEVICE_PROPERTY_VERSION,
-        QDMI_DEVICE_PROPERTY_LIBRARYVERSION, QDMI_DEVICE_PROPERTY_ID}) {
+  for (const auto property : {
+           QDMI_DEVICE_PROPERTY_NAME,
+           QDMI_DEVICE_PROPERTY_VERSION,
+           QDMI_DEVICE_PROPERTY_LIBRARYVERSION,
+           QDMI_DEVICE_PROPERTY_ID,
+       }) {
     SCOPED_TRACE(property);
     size_t size = 0;
     ASSERT_EQ(PASQAL_QDMI_device_session_query_device_property(
@@ -66,3 +72,5 @@ TEST_F(DeviceMetadataTest, ProvidesIdentityAndCapacity) {
             QDMI_SUCCESS);
   EXPECT_GT(capacity, 0U);
 }
+
+} // namespace

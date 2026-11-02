@@ -153,7 +153,6 @@ build = "cp3*"
 skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
-environment-pass = [ "PASQAL_EMAIL", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID" ]
 test-command = "pytest test/python"
 test-groups = [ "test" ]
 test-sources = [ "test/python", "pyproject.toml" ]
@@ -238,10 +237,33 @@ error-on-warning = true
 
 
 [tool.pytest]
-addopts = [ "-ra", "--numprocesses=auto" ]
+addopts = [ "-m", "not live", "-ra", "--numprocesses=auto" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
-markers = [ "integration: submits bounded jobs to Pasqal EMU_FREE" ]
+markers = [
+  "live: explicit provider access",
+]
 minversion = "9.1"
 strict = true
 testpaths = [ "test/python" ]
+
+
+[tool.coverage]
+
+[tool.coverage.run]
+source = [ "pasqal.qdmi" ]
+parallel = true
+disable_warnings = [
+  "no-sysmon",
+]
+core = "sysmon"
+
+[tool.coverage.report]
+exclude_also = [
+  "@overload",                 # Overloads are only for static typing
+  '\.\.\.',
+  "def __dir__()",             # Ignore __dir__ method that exists mainly for better IDE support
+  "if TYPE_CHECKING:",
+  "raise AssertionError",
+  "raise NotImplementedError"
+]

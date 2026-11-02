@@ -32,9 +32,10 @@ release and documentation setup.
   formatting, lint, typing and license-header checks.
 - Keep exploratory scripts, machine setup and task reports outside the checkout.
   Never print or commit credentials or authentication responses.
-- Ordinary tests and documentation use EMU_FREE, the free cloud emulator. Keep
-  workloads small and waits bounded. Local HTTP fixtures test failures. Other
-  emulators may be billed; hardware and paid execution need authorization.
+- Explicit live tests and notebook execution use EMU_FREE, the free cloud
+  emulator. Keep workloads small and waits bounded. Local HTTP fixtures test
+  failures. Other emulators may be billed; hardware and paid execution need
+  authorization.
 - Use signed, gitmoji-led commits. Preserve human attribution; record AI
   assistance with `Assisted-by`, never `Co-authored-by`. Follow the development
   policy for pull requests.
@@ -44,6 +45,8 @@ release and documentation setup.
 ## Validation
 
 Run focused checks while developing and `uvx nox -s lint` before submission. Use
-`uvx nox -s tests-3.14` for one Python version, `uvx nox -s tests` for the
-supported matrix, `uvx nox -s native` for CTest, and
-`uvx nox --non-interactive -s docs` for executable documentation.
+`uvx nox -s tests-3.14` for one Python version and `uvx nox -s tests` for the
+supported matrix. Configure and build with the `release` CMake preset, then run
+`ctest --preset release`. Build documentation with
+`uvx nox --non-interactive -s docs`; see [maintenance](docs/maintenance.md) for
+explicit EMU_FREE validation.

@@ -1,0 +1,19 @@
+name: 📦 Native installation
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        default: ubuntu-26.04
+permissions:
+  contents: read
+jobs:
+  install:
+    name: 📦 ${{ inputs.runs-on }}
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: cmake -P test/install.cmake

@@ -20,10 +20,16 @@
 
 #include "pasqal-qdmi-device/Specs.hpp"
 
+#include "pasqal_qdmi/constants.h"
+
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
+
+#include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <string>
 
 namespace pasqal {
 
