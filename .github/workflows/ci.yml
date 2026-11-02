@@ -19,7 +19,7 @@ jobs:
     name: 🔍 Change
     with:
       additional-cpp-files: |
-        .github/workflows/cpp-install-tests.yml
+        .github/workflows/cpp-*.yml
         .github/workflows/reusable-live-tests.yml
       additional-python-files: |
         .github/workflows/reusable-live-tests.yml
@@ -75,6 +75,9 @@ jobs:
           - windows-2025
         preset:
           - release
+        include:
+          - runs-on: windows-2025
+            preset: debug
     with:
       runs-on: ${{ matrix.runs-on }}
       preset-name: ${{ matrix.preset }}
@@ -209,7 +212,11 @@ jobs:
           allowed-skips: >-
             ${{
               !fromJSON(needs.change-detection.outputs.run-cpp-tests)
-              && 'cpp-tests-ubuntu,cpp-tests-macos,cpp-tests-windows,cpp-sanitizers,cpp-coverage,cpp-install-tests,' || ''
+              && 'cpp-tests-ubuntu,cpp-tests-macos,cpp-tests-windows,cpp-sanitizers,cpp-install-tests,' || ''
+            }}
+            ${{
+              !fromJSON(needs.change-detection.outputs.run-cpp-tests)
+              && 'cpp-coverage,' || ''
             }}
             ${{
               !fromJSON(needs.change-detection.outputs.run-python-tests)
