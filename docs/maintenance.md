@@ -19,6 +19,10 @@ and minimum-version sessions exclude `live` tests, including in a credentialed
 shell. CI runs native tests on Linux, macOS and Windows, with Python tests and
 minimums in a separate Linux job. Wheel and release builds test local fixtures.
 
+Native tests also run QDMI's shared query conformance suite against the local
+HTTP fixture. Select it with `ctest --test-dir build/release -L qdmi-query`. The
+test uses Python to host the fixture and does not submit cloud jobs.
+
 On Linux, collect native coverage with the instrumented build:
 
 ```console
