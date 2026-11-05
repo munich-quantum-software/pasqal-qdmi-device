@@ -47,6 +47,5 @@ release and documentation setup.
 Run focused checks while developing and `uvx nox -s lint` before submission. Use
 `uvx nox -s tests-3.14` for one Python version and `uvx nox -s tests` for the
 supported matrix. Configure and build with the `release` CMake preset, then run
-`ctest --preset release`. Build documentation with
-`uvx nox --non-interactive -s docs`; see [maintenance](docs/maintenance.md) for
-explicit EMU_FREE validation.
+`ctest --preset release`. Build documentation with `uvx nox -s docs`; see
+[maintenance](docs/maintenance.md) for explicit EMU_FREE validation.

@@ -9,7 +9,7 @@ cmake --preset release
 cmake --build --preset release
 ctest --preset release
 uvx nox -s tests minimums
-uvx nox --non-interactive -s docs
+uvx nox -s docs
 cmake -P test/install.cmake
 ```
 
@@ -75,17 +75,16 @@ consume credits and are not used by the test suite.
 
 ## Documentation
 
-Build HTML with `uvx nox --non-interactive -s docs`. It installs the provider,
-MQT Core and Pulser and renders the end-to-end example without execution. Use
-`uvx nox --non-interactive -s docs -- --live` to execute the EMU_FREE example.
-Successful notebook executions are cached; errors and Sphinx warnings fail the
-build. Clear `docs/_build/.jupyter_cache` to force execution after changing
-credentials. A fresh execution submits one small EMU_FREE batch.
+Build HTML with `uvx nox -s docs`. This installs the documentation environment,
+generates the C/C++ reference with Doxygen 1.15 or newer and builds the Sphinx
+site. Read the Docs uses the same dependency group and build targets. Default
+builds skip provider-backed notebooks and need no cloud credentials.
 
-Read the Docs builds the default branch and pull requests with
-`.readthedocs.yaml`, Python 3.14 and the same Nox command. These builds need no
-cloud credentials. Notebook execution is a local opt-in. Inspect rendered pages
-with Chrome DevTools after layout changes.
+Use `uvx nox -s docs -- --live` to execute the EMU_FREE example. The session
+sets `PASQAL_QDMI_LIVE_DOCS=1` for Sphinx and caches successful notebook
+executions; errors and Sphinx warnings fail the build. Clear
+`docs/_build/.jupyter_cache` to force execution after changing credentials. A
+fresh execution submits one small EMU_FREE batch.
 
 ## Releases
 

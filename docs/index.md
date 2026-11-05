@@ -20,6 +20,7 @@ installation
 authentication
 usage
 capabilities
+native_api
 troubleshooting
 maintenance
 development
