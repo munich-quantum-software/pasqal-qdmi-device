@@ -151,7 +151,9 @@ pasqal-qdmi = { workspace = true }
 
 [tool.cibuildwheel]
 build = "cp3*"
-skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
+skip = [ "*-musllinux_*", "cp3??t-*" ]
+# shortcut: QuTiP lacks Python 3.15 Windows ARM64 wheels; enable tests when available.
+test-skip = [ "cp315-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
 test-command = "pytest test/python"
@@ -169,6 +171,11 @@ select = "*-manylinux*"
 # EPEL installs OpenSSL 3 alongside the distribution's older default version.
 environment = { CMAKE_INCLUDE_PATH = "/usr/include/openssl3", CMAKE_LIBRARY_PATH = "/usr/lib64/openssl3" }
 before-all = "yum install -y openssl3-devel zlib-devel"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+# shortcut: cryptography lacks current ARM64 wheels; remove when available.
+before-test = "uv pip install --only-binary=cryptography cryptography"
 
 
 [tool.ruff]

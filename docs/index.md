@@ -20,7 +20,7 @@ installation
 authentication
 usage
 capabilities
-native_api
+cpp_api
 troubleshooting
 maintenance
 development

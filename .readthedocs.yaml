@@ -26,7 +26,6 @@ build:
         -DBUILD_PASQAL_QDMI_TESTS=OFF -DBUILD_PASQAL_QDMI_DOCS=ON
       - cmake --build build/docs --target pasqal-qdmi-device-docs
 
-# Let Read the Docs provision uv for the custom install command above.
 python:
   install:
     - method: uv

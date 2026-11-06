@@ -26,11 +26,13 @@ from importlib import metadata
 project = "Pasqal QDMI Device"
 author = "Lukas Burgholzer and Aleksander Wennersteen"
 copyright = "2026 Munich Quantum Software Company GmbH and Pasqal SAS"
+
 try:
     version = metadata.version("pasqal-qdmi")
 except ModuleNotFoundError:
     msg = "pasqal-qdmi must be installed to build the documentation"
     raise ModuleNotFoundError(msg) from None
+
 release = version.split("+")[0]
 extensions = ["myst_nb", "sphinx_copybutton"]
 source_suffix = [".md"]

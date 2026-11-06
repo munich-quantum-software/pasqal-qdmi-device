@@ -26,6 +26,7 @@ jobs:
           - ubuntu-26.04-arm
           - macos-26
           - windows-2025
+          - windows-11-arm
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@d6345b25f19cb7223ac883e5333ae9d63ae9238b # v2.5.9
     with:
       runs-on: ${{ matrix.runs-on }}

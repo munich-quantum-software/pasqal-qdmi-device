@@ -19,7 +19,6 @@ jobs:
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-change-detection.yml@d6345b25f19cb7223ac883e5333ae9d63ae9238b # v2.5.9
     with:
       additional-cpp-files: |
-        .github/workflows/cpp-*.yml
         .github/workflows/live-tests.yml
       additional-python-files: |
         .github/workflows/live-tests.yml
@@ -73,6 +72,7 @@ jobs:
       matrix:
         runs-on:
           - windows-2025
+          - windows-11-arm
         preset:
           - release
         include:
@@ -153,8 +153,9 @@ jobs:
           - ubuntu-26.04-arm
           - macos-26
           - windows-2025
-    uses: $/.github/workflows/cpp-install-tests.yml
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-install-tests.yml@3cc3c70f80f4c364b6094cd575560fdf5a94c29a # codex/add-cpp-install-tests
     with:
+      apt-packages: libssl-dev zlib1g-dev
       runs-on: ${{ matrix.runs-on }}
 
   build-sdist:
@@ -175,6 +176,7 @@ jobs:
           - ubuntu-26.04-arm
           - macos-26
           - windows-2025
+          - windows-11-arm
     uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-packaging-wheel-cibuildwheel.yml@d6345b25f19cb7223ac883e5333ae9d63ae9238b # v2.5.9
     with:
       runs-on: ${{ matrix.runs-on }}
