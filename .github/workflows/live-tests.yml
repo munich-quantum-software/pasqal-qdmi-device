@@ -8,36 +8,52 @@ on:
         required: true
       PASQAL_PROJECT_ID:
         required: true
+
 permissions:
   contents: read
+
 jobs:
   emu-free:
     name: ☁️ Live tests · Pasqal EMU_FREE
     runs-on: ubuntu-26.04
     timeout-minutes: 45
+    concurrency:
+      group: pasqal-emu-free-ubuntu-26.04
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
+
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: "3.14"
-          enable-cache: true
           save-cache: ${{ github.ref == 'refs/heads/main' }}
+          prune-cache: true
+
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y libssl-dev zlib1g-dev
+
       - name: Run checks
         run: |
           cmake --preset release
-          cmake --build --preset release --parallel 2
-          ctest --test-dir build/release -L live --output-on-failure --timeout 600
+          cmake --build --preset release --parallel 4
+          ctest --preset release
+
+      - name: Query public metadata without submissions
+        run: ctest --test-dir build/release -L live --output-on-failure --timeout 600 --parallel 1
+
+      - name: Build and test candidate wheel offline
+        run: |
+          uv build --wheel --out-dir build/live/dist
+          uv venv build/live/venv
+          uv pip install --python build/live/venv/bin/python --group test build/live/dist/*.whl
+          build/live/venv/bin/python -m pytest
+
       - name: EMU_FREE checks
-        run: uvx nox -s live-tests
         env:
           PASQAL_EMAIL: ${{ secrets.PASQAL_EMAIL }}
           PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
           PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
-    concurrency:
-      group: pasqal-emu-free-ubuntu-26.04
-      queue: max
+        run: build/live/venv/bin/python -m pytest -m live -n 0 --tb=line --show-capture=no

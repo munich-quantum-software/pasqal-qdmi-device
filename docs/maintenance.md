@@ -9,7 +9,7 @@ cmake --preset release
 cmake --build --preset release
 ctest --preset release
 uvx nox -s tests minimums
-uvx nox --non-interactive -s docs
+uvx nox -s docs
 cmake -P test/install.cmake
 ```
 
@@ -38,9 +38,10 @@ uvx nox -s tests-3.14 -- --cov --cov-report=xml:coverage.xml
 `.github/codecov.yml` defines the source paths and reporting thresholds.
 Coverage checks stay offline and do not include EMU_FREE or other live tests.
 
-CI runs live tests on EMU_FREE for non-fork pull requests after any selected
-offline checks pass. The tests verify that the backend is an unbilled emulator
-before submitting a small workload.
+CI runs EMU_FREE checks in parallel with the offline matrix when C++ or Python
+tests are selected. Fork PRs receive no credentials. The workflow validates its
+native build and candidate wheel offline before submitting a small workload to
+an unbilled emulator.
 
 For an explicitly intended free-cloud check, configure the credentials below and
 use `uvx nox -s live-tests`. Keep hardware and billed emulators outside this
@@ -75,17 +76,16 @@ consume credits and are not used by the test suite.
 
 ## Documentation
 
-Build HTML with `uvx nox --non-interactive -s docs`. It installs the provider,
-MQT Core and Pulser and renders the end-to-end example without execution. Use
-`uvx nox --non-interactive -s docs -- --live` to execute the EMU_FREE example.
-Successful notebook executions are cached; errors and Sphinx warnings fail the
-build. Clear `docs/_build/.jupyter_cache` to force execution after changing
-credentials. A fresh execution submits one small EMU_FREE batch.
+Build HTML with `uvx nox -s docs`. This installs the documentation environment,
+generates the C/C++ reference with Doxygen 1.15 or newer and builds the Sphinx
+site. Read the Docs uses the same dependency group and build targets. Default
+builds skip provider-backed notebooks and need no cloud credentials.
 
-Read the Docs builds the default branch and pull requests with
-`.readthedocs.yaml`, Python 3.14 and the same Nox command. These builds need no
-cloud credentials. Notebook execution is a local opt-in. Inspect rendered pages
-with Chrome DevTools after layout changes.
+Use `uvx nox -s docs -- --live` to execute the EMU_FREE example. The session
+sets `PASQAL_QDMI_LIVE_DOCS=1` for Sphinx and caches successful notebook
+executions; errors and Sphinx warnings fail the build. Clear
+`docs/_build/.jupyter_cache` to force execution after changing credentials. A
+fresh execution submits one small EMU_FREE batch.
 
 ## Releases
 

@@ -87,6 +87,7 @@ test = [
   "pytest-xdist>=3.8",
 ]
 docs = [
+  "cmake>=3.24",
   "furo>=2025.12.19",
   "mqt-core>=4.1.1",
   "myst-nb>=1.4",
@@ -150,11 +151,12 @@ pasqal-qdmi = { workspace = true }
 
 [tool.cibuildwheel]
 build = "cp3*"
-skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
+skip = [ "*-musllinux_*", "cp3??t-*" ]
+test-skip = [ "*-win_arm64" ]
 archs = "auto64"
 build-frontend = "uv"
+before-test = 'uv pip install --group "{project}/pyproject.toml:test"'
 test-command = "pytest test/python"
-test-groups = [ "test" ]
 test-sources = [ "test/python", "pyproject.toml" ]
 
 [tool.cibuildwheel.macos]
