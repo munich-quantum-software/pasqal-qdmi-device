@@ -10,10 +10,6 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
-### Added
-
-- ✨ Publish Windows ARM64 wheels ([#22]) ([**@denialhaag**]).
-
 ## [1.1.0] - 2026-11-02
 
 ### Added
@@ -62,7 +58,6 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
-[#22]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/22
 [#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
 [#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
 [#12]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/12
