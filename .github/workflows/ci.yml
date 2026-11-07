@@ -78,7 +78,7 @@ jobs:
         include:
           - runs-on: windows-2025
             preset: debug
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-windows.yml@d6345b25f19cb7223ac883e5333ae9d63ae9238b # v2.5.9
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-tests-windows.yml@e703e25199a579f98053cdba4e78fa9dfab5be13 # codex/add-cpp-install-tests
     with:
       runs-on: ${{ matrix.runs-on }}
       preset-name: ${{ matrix.preset }}
@@ -118,7 +118,7 @@ jobs:
     name: 🐍 Test
     needs: change-detection
     if: fromJSON(needs.change-detection.outputs.run-python-tests)
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-tests.yml@d6345b25f19cb7223ac883e5333ae9d63ae9238b # v2.5.9
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-python-tests.yml@e703e25199a579f98053cdba4e78fa9dfab5be13 # codex/add-cpp-install-tests
     with:
       runs-on: ubuntu-26.04
       sessions: '["tests", "minimums"]'
@@ -153,7 +153,7 @@ jobs:
           - ubuntu-26.04-arm
           - macos-26
           - windows-2025
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-install-tests.yml@3cc3c70f80f4c364b6094cd575560fdf5a94c29a # codex/add-cpp-install-tests
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-install-tests.yml@e703e25199a579f98053cdba4e78fa9dfab5be13 # codex/add-cpp-install-tests
     with:
       apt-packages: libssl-dev zlib1g-dev
       runs-on: ${{ matrix.runs-on }}
