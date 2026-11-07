@@ -183,17 +183,13 @@ jobs:
 
   live-tests:
     name: ☁️ Live tests
-    needs:
-      - change-detection
-      - cpp-tests-ubuntu
-      - cpp-tests-macos
-      - cpp-tests-windows
-      - python-tests
-      - build-wheel
+    needs: change-detection
     if: >-
       !cancelled()
-      && !contains(needs.*.result, 'failure')
-      && !contains(needs.*.result, 'cancelled')
+      && (
+        needs.change-detection.outputs.run-cpp-tests == 'true'
+        || needs.change-detection.outputs.run-python-tests == 'true'
+      )
       && (
         github.event_name != 'pull_request'
         || github.event.pull_request.head.repo.full_name == github.repository
@@ -253,8 +249,12 @@ jobs:
               && 'build-sdist,build-wheel,' || ''
             }}
             ${{
-              github.event_name == 'pull_request'
-              && github.event.pull_request.head.repo.full_name != github.repository
+              (
+                !fromJSON(needs.change-detection.outputs.run-cpp-tests)
+                && !fromJSON(needs.change-detection.outputs.run-python-tests)
+                || github.event_name == 'pull_request'
+                && github.event.pull_request.head.repo.full_name != github.repository
+              )
               && 'live-tests,' || ''
             }}
           jobs: ${{ toJSON(needs) }}
