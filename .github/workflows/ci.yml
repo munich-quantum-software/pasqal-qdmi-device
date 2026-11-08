@@ -142,7 +142,7 @@ jobs:
       enable-mypy: false
 
   cpp-install-tests:
-    name: 📦 C++ installation
+    name: 🇨 Installation
     needs: change-detection
     if: fromJSON(needs.change-detection.outputs.run-cpp-tests)
     strategy:
@@ -153,7 +153,7 @@ jobs:
           - ubuntu-26.04-arm
           - macos-26
           - windows-2025
-    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-install-tests.yml@d4d04564988a7d3c4a3ebf6a1f2c88ae73e5ab0c # codex/add-cpp-install-tests
+    uses: munich-quantum-toolkit/workflows/.github/workflows/reusable-cpp-install-tests.yml@d810ec0a3f6b2df6782207ee8923dc72fa853ed1 # codex/add-cpp-install-tests
     with:
       apt-packages: libssl-dev zlib1g-dev
       runs-on: ${{ matrix.runs-on }}
