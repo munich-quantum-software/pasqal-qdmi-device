@@ -23,7 +23,7 @@ requires = [ "scikit-build-core>=1.1.1" ]
 
 [project]
 name = "pasqal-qdmi"
-version = "1.1.0"
+version = "1.2.0"
 description = "Pasqal QDMI Device Implementation"
 readme = "README.md"
 license = "Apache-2.0 WITH LLVM-exception"
@@ -60,7 +60,7 @@ name = "Aleksander Wennersteen"
 email = "aleksander.wennersteen@pasqal.com"
 
 [project.optional-dependencies]
-mqt-core = [ "mqt-core>=4.1.1" ]
+mqt-core = [ "mqt-core>=4.2" ]
 pulser = [ "pulser>=1.9.1" ]
 
 [project.urls]
@@ -79,7 +79,7 @@ dev = [
   "nox>=2026.10.20",
 ]
 test = [
-  "mqt-core>=4.1.1",
+  "mqt-core>=4.2",
   "pulser>=1.9.1",
   "pytest>=9.1.1",
   "pytest-cov>=7.1",
@@ -88,7 +88,7 @@ test = [
 ]
 docs = [
   "furo>=2025.12.19",
-  "mqt-core>=4.1.1",
+  "mqt-core>=4.2",
   "myst-nb>=1.4",
   "pulser>=1.9.1",
   "sphinx>=9.0.4",

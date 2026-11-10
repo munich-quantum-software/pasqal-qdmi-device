@@ -10,6 +10,12 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
+### Changed
+
+- ⬆️ Update MQT Core to 4.2.0 ([#25]) ([**@denialhaag**]).
+
 ## [1.1.0] - 2026-11-02
 
 ### Added
@@ -52,12 +58,14 @@ releases may include breaking changes.
 
 <!-- Versions -->
 
-[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/compare/v1.1.0...main
+[Unreleased]: https://github.com/munich-quantum-software/pasqal-qdmi-device/compare/v1.2.0...main
+[1.2.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.2.0
 [1.1.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.1.0
 [1.0.0]: https://github.com/munich-quantum-software/pasqal-qdmi-device/releases/tag/v1.0.0
 
 <!-- Pull requests -->
 
+[#25]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/25
 [#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
 [#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
 [#12]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/12
