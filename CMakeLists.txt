@@ -42,6 +42,12 @@ include(CMakeDependentOption)
 option(USE_INSTALLED_PASQAL_QDMI_DEVICE
        "Use an installed version of the Pasqal QDMI Device to build tests" OFF)
 
+option(BUILD_PASQAL_QDMI_DOCS "Build API documentation" OFF)
+
+if(BUILD_PASQAL_QDMI_DOCS AND USE_INSTALLED_PASQAL_QDMI_DEVICE)
+  message(FATAL_ERROR "Documentation requires a source build")
+endif()
+
 if(USE_INSTALLED_PASQAL_QDMI_DEVICE)
   find_package(pasqal-qdmi-device ${PROJECT_VERSION} REQUIRED CONFIG)
 endif()
@@ -70,6 +76,10 @@ set(QDMI_TARGET_NAME "pasqal-qdmi-device")
 
 if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   add_subdirectory(src)
+endif()
+
+if(BUILD_PASQAL_QDMI_DOCS)
+  add_subdirectory(docs)
 endif()
 
 if(BUILD_PASQAL_QDMI_TESTS)

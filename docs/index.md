@@ -20,6 +20,7 @@ installation
 authentication
 usage
 capabilities
+cpp_api
 troubleshooting
 maintenance
 development
