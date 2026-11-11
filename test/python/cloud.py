@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import functools
 import json
 import socket
 import threading
@@ -38,8 +39,6 @@ from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-from pasqal.qdmi import PASQAL_QDMI_LIBRARY_PATH
 
 CUSTOM1 = 999_999_995
 PROGRAMS = [
@@ -54,6 +53,8 @@ class NativeAPI:
 
     def __init__(self) -> None:
         """Load the selected native library and configure its C ABI."""
+        from pasqal.qdmi import PASQAL_QDMI_LIBRARY_PATH  # ruff: ignore[import-outside-top-level] - native API is optional for the server
+
         self.library = ctypes.CDLL(str(PASQAL_QDMI_LIBRARY_PATH))
         lib = self.library
         handle, size, integer = ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int
@@ -202,7 +203,6 @@ class Cloud:
     def __init__(self, cleanup: contextlib.ExitStack) -> None:
         """Create independent metadata, counters and request records."""
         self.cleanup = cleanup
-        self.api = NativeAPI()
         self.job_ids = ["job-z", "job-a"]  # Neither lexical nor completion order.
         self.statuses = dict.fromkeys(self.job_ids, "DONE")
         self.counters: dict[str, object] = {"job-z": {"100": 7, "001": 2}, "job-a": {"010": 9}}
@@ -239,6 +239,11 @@ class Cloud:
         threading.Thread(target=server.serve_forever, daemon=True).start()
         self.cleanup.callback(server.server_close)
         self.cleanup.callback(server.shutdown)
+
+    @functools.cached_property
+    def api(self) -> NativeAPI:
+        """Load the native API only when this fixture uses it."""
+        return NativeAPI()
 
     def session(
         self,
