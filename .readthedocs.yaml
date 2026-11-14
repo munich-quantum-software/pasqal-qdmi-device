@@ -15,5 +15,8 @@ build:
       - python -m pip install uv
     build:
       html:
-        - uvx nox --non-interactive -s docs
-        - mkdir -p "$READTHEDOCS_OUTPUT/html" && cp -R docs/_build/html/. "$READTHEDOCS_OUTPUT/html"
+        # Use the released Core wheel to fit the documentation build time limit.
+        - >-
+          uv run --no-sources-package mqt-core --no-dev --group docs
+          sphinx-build -n -W --keep-going -b html -D nb_execution_mode=off
+          docs "$READTHEDOCS_OUTPUT/html"
