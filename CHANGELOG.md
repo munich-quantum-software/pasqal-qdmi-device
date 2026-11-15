@@ -10,6 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- ⬆️ Require MQT Core 4.2.1 and Python 3.11.5 or newer ([#32]) ([**@marcelwa**],
+  [**@burgholzer**]).
+
 ## [1.2.0] - 2026-11-10
 
 ### Changed
@@ -65,6 +70,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#32]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/32
 [#25]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/25
 [#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
 [#14]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/14
@@ -78,6 +84,7 @@ releases may include breaking changes.
 <!-- Contributors -->
 
 [**@awennersteen**]: https://github.com/awennersteen
+[**@marcelwa**]: https://github.com/marcelwa
 [**@burgholzer**]: https://github.com/burgholzer
 [**@denialhaag**]: https://github.com/denialhaag
 

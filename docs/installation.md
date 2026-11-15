@@ -1,9 +1,9 @@
 # Installation
 
 The Python package includes the native library and its device catalogue. It
-requires Python 3.11 or later; MQT Core and Pulser are optional. The full Pulser
-distribution includes the official Pasqal SDK and local simulation support.
-Install the package with the integrations you need:
+requires Python 3.11.5 or later; MQT Core and Pulser are optional. The full
+Pulser distribution includes the official Pasqal SDK and local simulation
+support. Install the package with the integrations you need:
 
 ```console
 uv pip install 'pasqal-qdmi[mqt-core,pulser]'
@@ -14,7 +14,7 @@ To build a wheel from a source checkout:
 ```sh
 uv build
 uv venv build/consumer
-uv pip install --python build/consumer/bin/python dist/pasqal_qdmi-*.whl 'mqt-core>=4.2.0'
+uv pip install --python build/consumer/bin/python dist/pasqal_qdmi-*.whl 'mqt-core>=4.2.1'
 build/consumer/bin/python -c "from mqt.core.qdmi import builtin_driver; print(builtin_driver.registered_device_ids())"
 ```
 
@@ -24,7 +24,7 @@ the manifest without authenticating or loading the provider. See the
 
 | Extra      | Purpose                                                                                 |
 | ---------- | --------------------------------------------------------------------------------------- |
-| `mqt-core` | Shared QDMI Python API through MQT Core >=4.2.0                                         |
+| `mqt-core` | Shared QDMI Python API through MQT Core >=4.2.1                                         |
 | `pulser`   | Full Pulser >=1.9.1 distribution, including the official cloud SDK and local simulation |
 
 The Pulser backend, `pasqal.qdmi.pulser`, needs both extras. The base package

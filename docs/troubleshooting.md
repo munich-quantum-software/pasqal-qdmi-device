@@ -1,7 +1,7 @@
 # Troubleshooting
 
 **The device ID is missing.** Install the wheel into the same environment as MQT
-Core and use MQT Core >=4.2.0. Check `pasqal.qdmi.PASQAL_QDMI_CATALOG_PATH` and
+Core and use MQT Core >=4.2.1. Check `pasqal.qdmi.PASQAL_QDMI_CATALOG_PATH` and
 the distribution entry point `mqt.core.qdmi.manifests`. A checkout alone is not
 an installed package. Discovery does not require credentials.
 
