@@ -1,4 +1,4 @@
-![Python](https://img.shields.io/badge/python-3.11.5%2B-blue?style=flat-square&logo=python)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python)
 ![OS](https://img.shields.io/badge/os-linux%20%7C%20macos%20%7C%20windows-blue?style=flat-square)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20WITH%20LLVM--exception-blue.svg?style=flat-square)](https://github.com/munich-quantum-software/pasqal-qdmi-device/blob/main/LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/munich-quantum-software/pasqal-qdmi-device/ci.yml?branch=main&style=flat-square&logo=github&label=ci)](https://github.com/munich-quantum-software/pasqal-qdmi-device/actions/workflows/ci.yml)
