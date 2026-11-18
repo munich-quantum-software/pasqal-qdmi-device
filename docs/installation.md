@@ -1,9 +1,9 @@
 # Installation
 
 The Python package includes the native library and its device catalogue. It
-requires Python 3.11 or later; MQT Core and Pulser are optional. The full Pulser
-distribution includes the official Pasqal SDK and local simulation support.
-Install the package with the integrations you need:
+requires Python 3.11.5 or later; MQT Core and Pulser are optional. The full
+Pulser distribution includes the official Pasqal SDK and local simulation
+support. Install the package with the integrations you need:
 
 ```console
 uv pip install 'pasqal-qdmi[mqt-core,pulser]'
@@ -14,7 +14,7 @@ To build a wheel from a source checkout:
 ```sh
 uv build
 uv venv build/consumer
-uv pip install --python build/consumer/bin/python dist/pasqal_qdmi-*.whl 'mqt-core>=4.1.1'
+uv pip install --python build/consumer/bin/python dist/pasqal_qdmi-*.whl 'mqt-core>=4.2.1'
 build/consumer/bin/python -c "from mqt.core.qdmi import builtin_driver; print(builtin_driver.registered_device_ids())"
 ```
 
@@ -24,12 +24,12 @@ the manifest without authenticating or loading the provider. See the
 
 | Extra      | Purpose                                                                                 |
 | ---------- | --------------------------------------------------------------------------------------- |
-| `mqt-core` | Shared QDMI Python API through MQT Core >=4.1.1                                         |
+| `mqt-core` | Shared QDMI Python API through MQT Core >=4.2.1                                         |
 | `pulser`   | Full Pulser >=1.9.1 distribution, including the official cloud SDK and local simulation |
 
 The Pulser backend, `pasqal.qdmi.pulser`, needs both extras. The base package
 has no Python runtime dependencies. Native C/C++ applications can use the
-installed QDMI library without Core or the Pasqal Python SDK.
+installed QDMI library without MQT Core or the Pasqal Python SDK.
 
 Wheel builds target Linux x86_64/ARM64 with manylinux_2_28 (glibc >=2.28), macOS
 ARM64 >=13.3, and Windows x86_64. CPR is linked statically on every platform.

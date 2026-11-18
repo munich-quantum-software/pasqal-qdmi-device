@@ -1,6 +1,6 @@
 # Capabilities and limits
 
-The native interface targets QDMI 1.4.0. Python integration uses MQT Core 4.1.1
+The native interface targets QDMI 1.4.0. Python integration uses MQT Core 4.2.0
 or later, directly or through Pulser's `QPUBackend` with `QDMIConnection`.
 Programs use native Pulser transport; gate-based frontend compilation is
 unsupported. EMU_FREE has been validated end to end; hardware execution has not.
@@ -36,19 +36,19 @@ validated.
 
 ## QDMI capabilities
 
-| QDMI capability | Behavior                                                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Discovery       | Installed catalogue IDs cover Pasqal Cloud systems; `pasqal.default` selects EMU_FREE unless configured otherwise. Discovery itself needs no authentication.                                            |
-| Authentication  | Standard username/password/auth URL/auth file fields; in-memory access-token lifecycle.                                                                                                                 |
-| Metadata        | Selected backend capacity and status come from `/devices`; raw Pulser constraints are a separate custom property. Current EMU_FREE metadata reports 12 atoms and unbilled emulator execution.           |
-| Sites           | Regular atom slots indexed from zero to backend capacity minus one, in program register order. `INDEX` and `ISZONE` (false) are supported; labels and geometry come from the Pulser register.           |
-| Operations      | Empty standard list. A Pulser channel is a pulse control resource, not an advertised gate.                                                                                                              |
-| Program format  | `CUSTOM1`: built Pulser abstract JSON, including register insertion order and measurement basis. OpenQASM, QIR, unbound variables and other formats are unsupported.                                    |
-| Batching        | Ordered programs with common shot count, one closed native Pasqal batch; indexed status/results and fresh-session retrieval.                                                                            |
-| Results         | Validated histogram keys and integer counts; atom zero appears at the right in Core/QDMI. Counter totals must match runs. Raw chronological shots, statevectors and probability arrays are unsupported. |
-| Job retrieval   | Native batch ID; individual cloud job IDs may be retrieved as a single program.                                                                                                                         |
-| Cancellation    | Request followed by one refresh: confirmed canceled returns success; pending confirmation returns FATAL (Core raises; poll status); already completed returns INVALIDARGUMENT and retains results.      |
-| Queue           | Validated backend queue length sums waiting jobs. Queue position returns `QDMI_ERROR_NOTSUPPORTED`: the published batch-position field does not establish QDMI's required number-of-jobs-ahead meaning. |
+| QDMI capability | Behavior                                                                                                                                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Discovery       | Installed catalogue IDs cover Pasqal Cloud systems; `pasqal.default` selects EMU_FREE unless configured otherwise. Discovery itself needs no authentication.                                                |
+| Authentication  | Standard username/password/auth URL/auth file fields; in-memory access-token lifecycle.                                                                                                                     |
+| Metadata        | Selected backend capacity and status come from `/devices`; raw Pulser constraints are a separate custom property. Current EMU_FREE metadata reports 12 atoms and unbilled emulator execution.               |
+| Sites           | Regular atom slots indexed from zero to backend capacity minus one, in program register order. `INDEX` and `ISZONE` (false) are supported; labels and geometry come from the Pulser register.               |
+| Operations      | Empty standard list. A Pulser channel is a pulse control resource, not an advertised gate.                                                                                                                  |
+| Program format  | `CUSTOM1`: built Pulser abstract JSON, including register insertion order and measurement basis. OpenQASM, QIR, unbound variables and other formats are unsupported.                                        |
+| Batching        | Ordered programs with common shot count, one closed native Pasqal batch; indexed status/results and fresh-session retrieval.                                                                                |
+| Results         | Validated histogram keys and integer counts; atom zero appears at the right in MQT Core/QDMI. Counter totals must match runs. Raw chronological shots, statevectors and probability arrays are unsupported. |
+| Job retrieval   | Native batch ID; individual cloud job IDs may be retrieved as a single program.                                                                                                                             |
+| Cancellation    | Request followed by one refresh: confirmed canceled returns success; pending confirmation returns FATAL (MQT Core raises; poll status); already completed returns INVALIDARGUMENT and retains results.      |
+| Queue           | Validated backend queue length sums waiting jobs. Queue position returns `QDMI_ERROR_NOTSUPPORTED`: the published batch-position field does not establish QDMI's required number-of-jobs-ahead meaning.     |
 
 ## Custom field contract
 
@@ -65,9 +65,9 @@ symbolic aliases. Standard buffer sizing applies: first query required bytes,
 then provide at least that much storage; string byte counts include the
 terminating NUL. Result buffers are caller-owned. Site handles belong to their
 initialized session and remain valid until it is freed. Keep a C session alive
-until its jobs are freed; Core owns these relationships through its bindings.
-Calls on one session and all of its jobs must be serialized. Separate sessions
-may run in parallel.
+until its jobs are freed; MQT Core owns these relationships through its
+bindings. Calls on one session and all of its jobs must be serialized. Separate
+sessions may run in parallel.
 
 ## Submission and recovery
 
@@ -82,9 +82,9 @@ Retain that ID and retry safe reads or retrieve from a fresh session. A repeated
 submit on the same attempted QDMI job is rejected. The Pulser connection
 includes an accepted batch ID in the exception note if waiting fails.
 
-Core raises on failed submission and does not return the failed job object. If
-no batch ID is available, reconcile the submission through Pasqal Cloud before
-creating another batch.
+MQT Core raises on failed submission and does not return the failed job object.
+If no batch ID is available, reconcile the submission through Pasqal Cloud
+before creating another batch.
 
 Cancellation cannot undo already completed work. Queue data, backend capacity
 and availability can change; runtime metadata takes precedence over historical
