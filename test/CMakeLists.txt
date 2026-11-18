@@ -62,20 +62,15 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-# Run all shared cases under one loopback server rather than discovering them separately.
-get_property(
-  existing_test_includes
-  DIRECTORY
-  PROPERTY TEST_INCLUDE_FILES)
 add_qdmi_device_query_tests(
   pasqal_query_tests
+  NO_ADD_TEST
   PREFIX
   ${QDMI_PREFIX}
   TARGET
   ${QDMI_TARGET_NAME}
   FIXTURE_HEADER
   "${CMAKE_CURRENT_SOURCE_DIR}/QueryFixture.hpp")
-set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILES "${existing_test_includes}")
 add_test(NAME pasqal_query_tests
          COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/python/query_suite.py"
                  "$<TARGET_FILE:pasqal_query_tests>")
