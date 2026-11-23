@@ -60,3 +60,18 @@ if(NOT USE_INSTALLED_PASQAL_QDMI_DEVICE)
   target_compile_features(${QDMI_TARGET_NAME}-unit-test PRIVATE cxx_std_20)
   gtest_discover_tests(${QDMI_TARGET_NAME}-unit-test DISCOVERY_TIMEOUT 60)
 endif()
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_qdmi_device_query_tests(
+  pasqal_query_tests
+  NO_ADD_TEST
+  PREFIX
+  ${QDMI_PREFIX}
+  TARGET
+  ${QDMI_TARGET_NAME}
+  FIXTURE_HEADER
+  "${CMAKE_CURRENT_SOURCE_DIR}/QueryFixture.hpp")
+add_test(NAME pasqal_query_tests
+         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/python/query_suite.py"
+                 "$<TARGET_FILE:pasqal_query_tests>")
+set_tests_properties(pasqal_query_tests PROPERTIES LABELS qdmi-query TIMEOUT 600)
