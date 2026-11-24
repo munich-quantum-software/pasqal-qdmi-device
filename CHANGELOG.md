@@ -10,6 +10,11 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- 📦 Provide Windows ARM64 wheels for the Pasqal QDMI device ([#42])
+  ([**@burgholzer**]).
+
 ### Changed
 
 - ⬆️ Require CMake 3.28 or newer for source builds ([#41]) ([**@denialhaag**])
@@ -77,6 +82,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#42]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/42
 [#41]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/41
 [#32]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/32
 [#25]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/25
