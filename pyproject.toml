@@ -167,6 +167,8 @@ repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg 
 select = "*-win_arm64"
 # The Pasqal Cloud SDK needs cryptography. Building it from source requires OpenSSL.
 before-test = "uv pip install --only-binary :all: cryptography"
+# Import Pulser and its numerical libraries once for the local HTTP tests.
+test-command = "pytest -n 0 test/python"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-manylinux*"
