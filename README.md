@@ -53,7 +53,7 @@ Install the Python package with the optional Core and Pulser integrations:
 uv pip install 'pasqal-qdmi[mqt-core,pulser]'
 ```
 
-Building from source requires a C++20 compiler, CMake 3.24 or newer, and OpenSSL
+Building from source requires a C++20 compiler, CMake 3.28 or newer, and OpenSSL
 3 development files on Linux. macOS uses Apple's curl and Windows uses Schannel.
 CMake builds CPR and, outside macOS, curl; installed compression libraries are
 detected automatically. A native installation does not require Python:
