@@ -85,5 +85,10 @@
       groupName: null,
       automerge: false,
     },
+    {
+      matchManagers: ["custom.regex"],
+      matchPackageNames: ["nlohmann/json"],
+      extractVersion: "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
+    },
   ],
 }
