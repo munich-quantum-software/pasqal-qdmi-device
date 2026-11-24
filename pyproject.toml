@@ -150,7 +150,7 @@ pasqal-qdmi = { workspace = true }
 
 [tool.cibuildwheel]
 build = "cp3*"
-skip = [ "*-musllinux_*", "cp3??t-*", "*-win_arm64" ]
+skip = [ "*-musllinux_*", "cp3??t-*" ]
 archs = "auto64"
 build-frontend = "uv"
 test-command = "pytest test/python"
@@ -162,6 +162,13 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "13.3" }
 
 [tool.cibuildwheel.windows]
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg pasqal"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+# The Pasqal Cloud SDK needs cryptography. Building it from source requires OpenSSL.
+before-test = "uv pip install --only-binary :all: cryptography"
+# Import Pulser and its numerical libraries once for the local HTTP tests.
+test-command = "pytest -n 0 test/python"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-manylinux*"
