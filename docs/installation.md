@@ -47,7 +47,7 @@ macOS and Windows use operating-system TLS in both native builds and wheels.
 
 ## Native CMake installation
 
-A source build needs a C++20 compiler, CMake >=3.24, and OpenSSL >=3.0
+A source build needs a C++20 compiler, CMake >=3.28, and OpenSSL >=3.0
 development files on Linux. For example:
 
 ```sh

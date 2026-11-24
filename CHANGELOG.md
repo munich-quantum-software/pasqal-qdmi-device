@@ -10,6 +10,10 @@ releases may include breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- ⬆️ Require CMake 3.28 or newer for source builds ([#41]) ([**@denialhaag**])
+
 ## [1.2.1] - 2026-11-15
 
 ### Changed
@@ -73,6 +77,7 @@ releases may include breaking changes.
 
 <!-- Pull requests -->
 
+[#41]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/41
 [#32]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/32
 [#25]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/25
 [#15]: https://github.com/munich-quantum-software/pasqal-qdmi-device/pull/15
