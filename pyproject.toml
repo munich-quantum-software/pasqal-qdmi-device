@@ -150,7 +150,7 @@ pasqal-qdmi = { workspace = true }
 
 [tool.cibuildwheel]
 build = "cp3*"
-skip = [ "*-musllinux_*", "cp3??t-*" ]
+skip = [ "*-musllinux_*", "cp314t-*" ]
 archs = "auto64"
 build-frontend = "uv"
 test-command = "pytest test/python"
@@ -164,7 +164,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "13.3" }
 repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel} --namespace-pkg pasqal"
 
 [[tool.cibuildwheel.overrides]]
-select = "*-win_arm64"
+select = "cp3??-win_arm64"
 # The Pasqal Cloud SDK needs cryptography. Building it from source requires OpenSSL.
 before-test = "uv pip install --only-binary :all: cryptography"
 # Import Pulser and its numerical libraries once for the local HTTP tests.
@@ -175,6 +175,15 @@ select = "*-manylinux*"
 # EPEL installs OpenSSL 3 alongside the distribution's older default version.
 environment = { CMAKE_INCLUDE_PATH = "/usr/include/openssl3", CMAKE_LIBRARY_PATH = "/usr/lib64/openssl3" }
 before-all = "yum install -y openssl3-devel zlib-devel"
+
+[[tool.cibuildwheel.overrides]]
+select = "cp3??t-*"
+test-command = [
+  'python -c "import sys, pasqal.qdmi, mqt.core.qdmi; assert not sys._is_gil_enabled()"',
+  "pytest -n 0 test/python/test_native.py",
+]
+test-requires = [ "mqt-core>=4.2.1", "pytest>=9.1.1", "pytest-xdist>=3.8" ]
+test-groups = []
 
 
 [tool.ruff]
